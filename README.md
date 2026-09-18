@@ -2,6 +2,10 @@
 
 A full-stack financial fraud detection application using **Random Forest + XGBoost ensemble** trained on the **AIML Dataset** (6.3M transactions). Features a Python Flask REST API backend and a Streamlit interactive dashboard frontend.
 
+## 🌐 Live Demo
+
+**[https://fraud-detection-project-hurba2b9rwbrdtg73xvpbb.streamlit.app/](https://fraud-detection-project-hurba2b9rwbrdtg73xvpbb.streamlit.app/)**
+
 ---
 
 ## 📊 Model Performance
