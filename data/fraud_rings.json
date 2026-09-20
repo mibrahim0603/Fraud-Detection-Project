@@ -1,0 +1,570 @@
+[
+  {
+    "nodes": [
+      {
+        "id": "C1174000532",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C17222024",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C410033330",
+        "fraud": 1,
+        "n_tx": 2
+      }
+    ],
+    "edges": [
+      {
+        "source": "C1174000532",
+        "target": "C410033330",
+        "amount": 120074.73,
+        "type": "CASH_OUT",
+        "is_fraud": 1
+      },
+      {
+        "source": "C17222024",
+        "target": "C410033330",
+        "amount": 13707.11,
+        "type": "TRANSFER",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 2,
+    "total_tx_count": 2,
+    "node_count": 3
+  },
+  {
+    "nodes": [
+      {
+        "id": "C185805228",
+        "fraud": 1,
+        "n_tx": 2
+      },
+      {
+        "id": "C1446413189",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C1002446735",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C1446413189",
+        "target": "C185805228",
+        "amount": 295664.18,
+        "type": "CASH_OUT",
+        "is_fraud": 1
+      },
+      {
+        "source": "C1002446735",
+        "target": "C185805228",
+        "amount": 828720.89,
+        "type": "CASH_OUT",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 2,
+    "total_tx_count": 2,
+    "node_count": 3
+  },
+  {
+    "nodes": [
+      {
+        "id": "C200064275",
+        "fraud": 1,
+        "n_tx": 2
+      },
+      {
+        "id": "C1065370362",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C343345083",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C1065370362",
+        "target": "C200064275",
+        "amount": 170.0,
+        "type": "CASH_OUT",
+        "is_fraud": 1
+      },
+      {
+        "source": "C343345083",
+        "target": "C200064275",
+        "amount": 8677.0,
+        "type": "CASH_OUT",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 2,
+    "total_tx_count": 2,
+    "node_count": 3
+  },
+  {
+    "nodes": [
+      {
+        "id": "C803116137",
+        "fraud": 1,
+        "n_tx": 2
+      },
+      {
+        "id": "C168686866",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C840095827",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C168686866",
+        "target": "C803116137",
+        "amount": 1684039.12,
+        "type": "CASH_OUT",
+        "is_fraud": 1
+      },
+      {
+        "source": "C840095827",
+        "target": "C803116137",
+        "amount": 60726.57,
+        "type": "CASH_OUT",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 2,
+    "total_tx_count": 2,
+    "node_count": 3
+  },
+  {
+    "nodes": [
+      {
+        "id": "C1101705841",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C925285469",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C1101705841",
+        "target": "C925285469",
+        "amount": 19472.0,
+        "type": "TRANSFER",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 1,
+    "total_tx_count": 1,
+    "node_count": 2
+  },
+  {
+    "nodes": [
+      {
+        "id": "C576568419",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C1571546632",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C576568419",
+        "target": "C1571546632",
+        "amount": 3964129.99,
+        "type": "TRANSFER",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 1,
+    "total_tx_count": 1,
+    "node_count": 2
+  },
+  {
+    "nodes": [
+      {
+        "id": "C1540407960",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C2049498532",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C2049498532",
+        "target": "C1540407960",
+        "amount": 3372.0,
+        "type": "TRANSFER",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 1,
+    "total_tx_count": 1,
+    "node_count": 2
+  },
+  {
+    "nodes": [
+      {
+        "id": "C1702714599",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C83459379",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C1702714599",
+        "target": "C83459379",
+        "amount": 986876.27,
+        "type": "TRANSFER",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 1,
+    "total_tx_count": 1,
+    "node_count": 2
+  },
+  {
+    "nodes": [
+      {
+        "id": "C684399107",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C1657291163",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C1657291163",
+        "target": "C684399107",
+        "amount": 40458.0,
+        "type": "CASH_OUT",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 1,
+    "total_tx_count": 1,
+    "node_count": 2
+  },
+  {
+    "nodes": [
+      {
+        "id": "C1607901570",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C71665357",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C71665357",
+        "target": "C1607901570",
+        "amount": 291305.98,
+        "type": "TRANSFER",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 1,
+    "total_tx_count": 1,
+    "node_count": 2
+  },
+  {
+    "nodes": [
+      {
+        "id": "C1462280812",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C90486891",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C1462280812",
+        "target": "C90486891",
+        "amount": 314251.58,
+        "type": "CASH_OUT",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 1,
+    "total_tx_count": 1,
+    "node_count": 2
+  },
+  {
+    "nodes": [
+      {
+        "id": "C1848415041",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C137533655",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C137533655",
+        "target": "C1848415041",
+        "amount": 20128.0,
+        "type": "TRANSFER",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 1,
+    "total_tx_count": 1,
+    "node_count": 2
+  },
+  {
+    "nodes": [
+      {
+        "id": "C667346055",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C749981943",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C749981943",
+        "target": "C667346055",
+        "amount": 416001.33,
+        "type": "CASH_OUT",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 1,
+    "total_tx_count": 1,
+    "node_count": 2
+  },
+  {
+    "nodes": [
+      {
+        "id": "C1984954272",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C124540047",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C1984954272",
+        "target": "C124540047",
+        "amount": 10539.37,
+        "type": "CASH_OUT",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 1,
+    "total_tx_count": 1,
+    "node_count": 2
+  },
+  {
+    "nodes": [
+      {
+        "id": "C383882703",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C1807010830",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C383882703",
+        "target": "C1807010830",
+        "amount": 60726.57,
+        "type": "TRANSFER",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 1,
+    "total_tx_count": 1,
+    "node_count": 2
+  },
+  {
+    "nodes": [
+      {
+        "id": "C89283631",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C1228650470",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C89283631",
+        "target": "C1228650470",
+        "amount": 335219.49,
+        "type": "CASH_OUT",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 1,
+    "total_tx_count": 1,
+    "node_count": 2
+  },
+  {
+    "nodes": [
+      {
+        "id": "C365271329",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C2012983997",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C2012983997",
+        "target": "C365271329",
+        "amount": 3569720.42,
+        "type": "CASH_OUT",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 1,
+    "total_tx_count": 1,
+    "node_count": 2
+  },
+  {
+    "nodes": [
+      {
+        "id": "C745648946",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C1091334879",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C745648946",
+        "target": "C1091334879",
+        "amount": 1974352.3,
+        "type": "TRANSFER",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 1,
+    "total_tx_count": 1,
+    "node_count": 2
+  },
+  {
+    "nodes": [
+      {
+        "id": "C1894004688",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C1293978242",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C1894004688",
+        "target": "C1293978242",
+        "amount": 408.0,
+        "type": "CASH_OUT",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 1,
+    "total_tx_count": 1,
+    "node_count": 2
+  },
+  {
+    "nodes": [
+      {
+        "id": "C1662235713",
+        "fraud": 1,
+        "n_tx": 1
+      },
+      {
+        "id": "C2025652936",
+        "fraud": 1,
+        "n_tx": 1
+      }
+    ],
+    "edges": [
+      {
+        "source": "C2025652936",
+        "target": "C1662235713",
+        "amount": 33332.86,
+        "type": "TRANSFER",
+        "is_fraud": 1
+      }
+    ],
+    "fraud_tx_count": 1,
+    "total_tx_count": 1,
+    "node_count": 2
+  }
+]

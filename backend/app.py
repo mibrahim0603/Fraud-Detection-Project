@@ -1,19 +1,29 @@
 """
 app.py — Fraud Detection REST API (Flask)
 Endpoints:
-  GET  /health              — liveness probe
-  GET  /api/metrics         — model evaluation metrics
-  GET  /api/eda             — EDA snapshot
-  POST /api/predict         — single transaction prediction
-  POST /api/predict/batch   — batch transaction prediction (JSON array)
+  GET  /health                  — liveness probe
+  GET  /api/metrics             — model evaluation metrics + leakage note
+  GET  /api/eda                 — EDA snapshot
+  POST /api/predict             — single transaction prediction
+  POST /api/predict/batch       — batch transaction prediction (JSON array)
+  GET  /api/feature_importance  — sorted feature importances
+  POST /api/shap                — SHAP explanation for one transaction
+  GET  /api/graph/rings         — top fraud rings (nodes + edges)
+  GET  /api/graph/nodes         — all graph nodes with metadata
+  GET  /api/gnn/scores          — per-node GNN fraud scores + metrics
 """
 
 import os
 import json
+import sys
 import joblib
 import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+
+# Allow imports from backend/ when running as python backend/app.py
+sys.path.insert(0, os.path.dirname(__file__))
+from explain import explain_transaction
 
 MODELS_DIR = os.path.join(os.path.dirname(__file__), "..", "models")
 DATA_DIR   = os.path.join(os.path.dirname(__file__), "..", "data")
@@ -22,11 +32,15 @@ app = Flask(__name__)
 CORS(app)
 
 # ─── Load artifacts once at startup ──────────────────────────────────────────
-_rf, _xgb, _le, _feature_cols, _metrics, _eda = None, None, None, None, None, None
+_rf = _xgb = _le = _feature_cols = _metrics = _eda = None
+_graph_rings = _graph_nodes = _gnn_scores = None
+
 
 def load_artifacts():
     global _rf, _xgb, _le, _feature_cols, _metrics, _eda
-    _rf = joblib.load(os.path.join(MODELS_DIR, "random_forest.pkl"))
+    global _graph_rings, _graph_nodes, _gnn_scores
+
+    _rf  = joblib.load(os.path.join(MODELS_DIR, "random_forest.pkl"))
     _xgb = joblib.load(os.path.join(MODELS_DIR, "xgboost.pkl"))
     _le  = joblib.load(os.path.join(MODELS_DIR, "label_encoder.pkl"))
     with open(os.path.join(MODELS_DIR, "feature_cols.json")) as f:
@@ -35,6 +49,20 @@ def load_artifacts():
         _metrics = json.load(f)
     with open(os.path.join(DATA_DIR, "eda_snapshot.json")) as f:
         _eda = json.load(f)
+
+    # Graph artifacts (optional — only if graph_builder.py was run)
+    rings_path = os.path.join(DATA_DIR, "fraud_rings.json")
+    nodes_path = os.path.join(DATA_DIR, "graph_nodes.json")
+    gnn_path   = os.path.join(DATA_DIR, "gnn_node_scores.json")
+    if os.path.exists(rings_path):
+        with open(rings_path) as f:
+            _graph_rings = json.load(f)
+    if os.path.exists(nodes_path):
+        with open(nodes_path) as f:
+            _graph_nodes = json.load(f)
+    if os.path.exists(gnn_path):
+        with open(gnn_path) as f:
+            _gnn_scores = json.load(f)
 
 
 def build_features(tx: dict) -> np.ndarray:
@@ -148,6 +176,50 @@ def feature_importance():
     fi = _metrics.get("feature_importances", {})
     sorted_fi = sorted(fi.items(), key=lambda x: x[1], reverse=True)
     return jsonify({"feature_importances": sorted_fi})
+
+
+@app.route("/api/shap", methods=["POST"])
+def shap_explain():
+    if _xgb is None:
+        return jsonify({"error": "Models not loaded"}), 503
+
+    data = request.get_json(force=True)
+    required = ["type", "amount"]
+    missing = [k for k in required if k not in data]
+    if missing:
+        return jsonify({"error": f"Missing fields: {missing}"}), 400
+
+    valid_types = list(_le.classes_)
+    if data["type"].upper() not in valid_types:
+        return jsonify({"error": f"Invalid type. Must be one of: {valid_types}"}), 400
+
+    try:
+        result = explain_transaction(data, _xgb, _le, _feature_cols)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/graph/rings")
+def graph_rings():
+    if _graph_rings is None:
+        return jsonify({"error": "Graph not built. Run backend/graph_builder.py first."}), 503
+    limit = int(request.args.get("limit", 10))
+    return jsonify({"rings": _graph_rings[:limit], "total": len(_graph_rings)})
+
+
+@app.route("/api/graph/nodes")
+def graph_nodes():
+    if _graph_nodes is None:
+        return jsonify({"error": "Graph not built. Run backend/graph_builder.py first."}), 503
+    return jsonify({"nodes": _graph_nodes, "count": len(_graph_nodes)})
+
+
+@app.route("/api/gnn/scores")
+def gnn_scores():
+    if _gnn_scores is None:
+        return jsonify({"error": "GNN not trained. Run backend/train_gnn.py first."}), 503
+    return jsonify(_gnn_scores)
 
 
 # ─── Bootstrap ───────────────────────────────────────────────────────────────

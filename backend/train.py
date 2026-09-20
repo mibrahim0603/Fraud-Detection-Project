@@ -2,6 +2,18 @@
 train.py — Fraud Detection Model Training Pipeline
 Reads AIML Dataset.csv, preprocesses data, trains a Random Forest + XGBoost
 ensemble, evaluates on a held-out test set, and saves all artifacts to /models.
+
+Leakage disclosure
+──────────────────
+Two engineered features use post-transaction balance states that would NOT be
+available at real decision time in a production system:
+  • errorBalanceOrig  = newbalanceOrig + amount − oldbalanceOrg
+  • errorBalanceDest  = oldbalanceDest + amount − newbalanceDest
+These features are highly predictive (SHAP confirms they dominate) because they
+perfectly encode whether a fraud-type drain occurred. The reported metrics
+(ROC-AUC ~0.9997) should therefore be understood as an upper bound on what the
+model could achieve in a truly online setting. See metrics.json key
+"leakage_note" for the full disclosure stored alongside model metrics.
 """
 
 import os
@@ -132,10 +144,26 @@ def train_and_evaluate(df: pd.DataFrame, feature_cols: list):
         print(f"[{name.upper()}] ROC-AUC={metrics[name]['roc_auc']}  F1={metrics[name]['f1']}")
 
     # Feature importances (average of both)
-    fi_rf = rf.feature_importances_
+    fi_rf  = rf.feature_importances_
     fi_xgb = xgb.feature_importances_
     fi_avg = ((fi_rf + fi_xgb) / 2).tolist()
     metrics["feature_importances"] = dict(zip(feature_cols, fi_avg))
+
+    # Leakage-aware annotation
+    leakage_features = ["errorBalanceOrig", "errorBalanceDest"]
+    metrics["leakage_note"] = {
+        "affected_features": leakage_features,
+        "explanation": (
+            "These features are derived from post-transaction balance states "
+            "(newbalanceOrig, oldbalanceDest) which are not available before a "
+            "transaction is settled. In a real-time deployment they must be "
+            "removed or estimated. The reported ROC-AUC / F1 metrics are an "
+            "upper bound — expect lower performance without them."
+        ),
+        "leaky_fi_share": round(
+            sum(metrics["feature_importances"].get(f, 0) for f in leakage_features), 4
+        ),
+    }
 
     return rf, xgb, metrics, X_test, y_test
 

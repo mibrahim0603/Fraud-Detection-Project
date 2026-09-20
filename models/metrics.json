@@ -144,5 +144,13 @@
     "origZeroBalance": 0.01596531335570075,
     "destZeroBalance": 0.0024940949458171786,
     "amountRatio": 0.12658564398041022
+  },
+  "leakage_note": {
+    "affected_features": [
+      "errorBalanceOrig",
+      "errorBalanceDest"
+    ],
+    "explanation": "These features are derived from post-transaction balance states (newbalanceOrig, oldbalanceDest) which are not available before a transaction is settled. In a real-time deployment they must be removed or estimated. The reported ROC-AUC / F1 metrics are an upper bound \u2014 expect lower performance without them.",
+    "leaky_fi_share": 0.4176
   }
 }

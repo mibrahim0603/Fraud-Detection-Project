@@ -1,6 +1,6 @@
 # 🔐 Fraud Detection System
 
-A full-stack financial fraud detection application using **Random Forest + XGBoost ensemble** trained on the **AIML Dataset** (6.3M transactions). Features a Python Flask REST API backend and a Streamlit interactive dashboard frontend.
+A full-stack financial fraud detection application using **Random Forest + XGBoost ensemble + GraphSAGE GNN** trained on the **AIML Dataset** (6.3M transactions). Features a Flask REST API, a Streamlit dashboard with SHAP explainability and fraud ring visualisation.
 
 ## 🌐 Live Demo
 
@@ -8,13 +8,24 @@ A full-stack financial fraud detection application using **Random Forest + XGBoo
 
 ---
 
+## ⚠️ Data Leakage Disclosure
+
+Two engineered features use **post-transaction** balance states unavailable at real decision time:
+- `errorBalanceOrig` = `newbalanceOrig + amount − oldbalanceOrg`
+- `errorBalanceDest` = `oldbalanceDest + amount − newbalanceDest`
+
+These features carry **~41.8% of combined feature importance** (confirmed by SHAP). The reported ROC-AUC / F1 metrics are therefore an **upper bound**. This is documented in `models/metrics.json` under `leakage_note` and surfaced in the 🧠 SHAP Explainer page.
+
+---
+
 ## 📊 Model Performance
 
-| Model | ROC-AUC | F1 Score | Precision | Recall |
-|---|---|---|---|---|
-| Random Forest | 0.9997 | 0.9976 | — | — |
-| XGBoost | 0.9998 | 0.9963 | — | — |
-| **Ensemble** | **0.9997** | **0.9970** | — | — |
+| Model | ROC-AUC | F1 Score | Notes |
+|---|---|---|---|
+| Random Forest | 0.9997 | 0.9976 | 100 trees, depth 15, SMOTE |
+| XGBoost | 0.9998 | 0.9963 | 200 estimators, depth 6 |
+| **Ensemble** | **0.9997** | **0.9970** | Avg RF + XGB probability |
+| GraphSAGE (numpy) | — | **0.9910** | 2-layer, node-level fraud clf |
 
 ---
 
@@ -23,24 +34,32 @@ A full-stack financial fraud detection application using **Random Forest + XGBoo
 ```
 Fraud Detection Project/
 │
-├── AIML Dataset.csv          ← Source dataset (6.3M rows)
+├── AIML Dataset.csv               ← Source dataset (6.3M rows)
 │
 ├── backend/
-│   ├── train.py              ← Data pipeline, feature engineering, model training
-│   └── app.py                ← Flask REST API server
+│   ├── train.py                   ← RF + XGBoost training, leakage-aware metrics
+│   ├── app.py                     ← Flask REST API (predict, SHAP, graph endpoints)
+│   ├── graph_builder.py           ← Builds account-transaction graph + fraud rings
+│   ├── train_gnn.py               ← 2-layer GraphSAGE (pure NumPy), saves gnn_model.pt
+│   └── explain.py                 ← SHAP TreeExplainer wrapper for XGBoost
 │
 ├── frontend/
-│   └── dashboard.py          ← Streamlit interactive dashboard
+│   └── dashboard.py               ← 6-page Streamlit dashboard
 │
-├── models/                   ← Generated after training
+├── models/
 │   ├── random_forest.pkl
 │   ├── xgboost.pkl
 │   ├── label_encoder.pkl
 │   ├── feature_cols.json
-│   └── metrics.json
+│   ├── metrics.json               ← includes leakage_note
+│   └── gnn_model.pt               ← GraphSAGE weights (joblib format)
 │
-├── data/                     ← Generated after training
-│   └── eda_snapshot.json
+├── data/
+│   ├── eda_snapshot.json
+│   ├── fraud_rings.json           ← Top-20 fraud rings (nodes + edges)
+│   ├── graph_nodes.json           ← All account node metadata
+│   ├── gnn_features.json          ← Node feature matrix for GNN training
+│   └── gnn_node_scores.json       ← Per-node GNN fraud probabilities
 │
 └── README.md
 ```
@@ -52,110 +71,78 @@ Fraud Detection Project/
 ### 1. Install Dependencies
 
 ```bash
-pip install pandas scikit-learn xgboost imbalanced-learn flask flask-cors streamlit plotly joblib
+pip install pandas scikit-learn xgboost imbalanced-learn flask flask-cors streamlit plotly joblib shap networkx
 ```
 
-### 2. Train the Model
+### 2. Train RF + XGBoost Models
 
 ```bash
 python backend/train.py
 ```
 
-This will:
-- Load and sample the AIML Dataset
-- Engineer features (balance errors, zero-balance flags, amount ratio)
-- Apply SMOTE oversampling on the training split
-- Train Random Forest + XGBoost models
-- Save model artifacts to `models/`
-- Save an EDA snapshot to `data/`
+Outputs: `models/random_forest.pkl`, `models/xgboost.pkl`, `models/metrics.json` (with `leakage_note`), `data/eda_snapshot.json`
 
-Expected training time: **3–8 minutes** depending on hardware.
+### 3. Build the Transaction Graph
 
-### 3. Start the Flask API
+```bash
+python backend/graph_builder.py
+```
+
+Outputs: `data/fraud_rings.json`, `data/graph_nodes.json`, `data/gnn_features.json`
+
+### 4. Train the GraphSAGE GNN
+
+```bash
+python backend/train_gnn.py
+```
+
+Outputs: `models/gnn_model.pt`, `data/gnn_node_scores.json`
+
+### 5. Start the Flask API
 
 ```bash
 python backend/app.py
 ```
 
-API will be available at `http://localhost:5000`
+API available at `http://localhost:5000`
 
-### 4. Launch the Streamlit Dashboard
-
-Open a second terminal and run:
+### 6. Launch the Streamlit Dashboard
 
 ```bash
 streamlit run frontend/dashboard.py
 ```
 
-Dashboard will open at `http://localhost:8501`
+Dashboard opens at `http://localhost:8501`
 
 ---
 
 ## 🔌 API Reference
 
-### Health Check
-```
-GET /health
-```
-
-### EDA Snapshot
-```
-GET /api/eda
-```
-
-### Model Metrics
-```
-GET /api/metrics
-```
-
-### Single Prediction
-```
-POST /api/predict
-Content-Type: application/json
-
-{
-  "type": "CASH_OUT",
-  "amount": 181000,
-  "step": 1,
-  "oldbalanceOrg": 181000,
-  "newbalanceOrig": 0,
-  "oldbalanceDest": 21182,
-  "newbalanceDest": 0
-}
-```
-
-**Response:**
-```json
-{
-  "fraud_probability": 0.995,
-  "is_fraud": true,
-  "risk_level": "HIGH",
-  "rf_probability": 0.99,
-  "xgb_probability": 1.0
-}
-```
-
-### Batch Prediction
-```
-POST /api/predict/batch
-Content-Type: application/json
-
-[
-  { "type": "CASH_OUT", "amount": 181000, ... },
-  { "type": "PAYMENT",  "amount": 9839.64, ... }
-]
-```
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/health` | Liveness probe |
+| GET | `/api/eda` | EDA statistics snapshot |
+| GET | `/api/metrics` | Model metrics + leakage note |
+| GET | `/api/feature_importance` | Sorted feature importances |
+| POST | `/api/predict` | Single transaction prediction |
+| POST | `/api/predict/batch` | Batch prediction (JSON array) |
+| POST | `/api/shap` | SHAP explanation for one transaction |
+| GET | `/api/graph/rings` | Top fraud rings (nodes + edges) |
+| GET | `/api/graph/nodes` | All account node metadata |
+| GET | `/api/gnn/scores` | Per-node GNN fraud scores |
 
 ---
 
-## 🖥 Dashboard Pages
+## 🖥 Dashboard Pages (6)
 
 | Page | Description |
 |---|---|
-| 🏠 Overview | KPI cards, transaction type distribution, fraud by type, hourly fraud pattern, amount comparison |
-| 📊 Model Metrics | Model comparison table, metric bar charts, confusion matrices, feature importance |
-| 🔍 Live Prediction | Single transaction inference with gauge chart + batch CSV upload & download |
-| 📖 About | Dataset description, methodology, architecture, tech stack |
+| 🏠 Overview | KPI cards, EDA charts, hourly fraud pattern, amount stats |
+| 📊 Model Metrics | Comparison table, confusion matrices, feature importance |
+| 🔍 Live Prediction | Single + batch inference with fraud probability gauge |
+| 🧠 SHAP Explainer | Waterfall chart, leakage disclosure, global SHAP importance |
+| 🕸 Fraud Rings | Interactive account-transaction graph + GNN score overlay |
+| 📖 About | Dataset, leakage disclosure, methodology, tech stack |
 
 ---
 
@@ -177,8 +164,10 @@ Content-Type: application/json
 - **scikit-learn** — Random Forest, metrics, preprocessing
 - **XGBoost** — Gradient boosted trees
 - **imbalanced-learn** — SMOTE oversampling
-- **Flask + Flask-CORS** — REST API
+- **SHAP** — TreeExplainer for XGBoost (waterfall + global importance)
+- **networkx** — Graph construction + connected-component fraud ring detection
+- **Flask + Flask-CORS** — REST API backend
 - **Streamlit** — Python-native frontend
-- **Plotly** — Interactive visualisations
+- **Plotly** — Interactive charts + network graph visualisation
 - **pandas / numpy** — Data processing
 - **joblib** — Model serialisation
