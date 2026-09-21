@@ -164,6 +164,37 @@
     "fn": 112,
     "tn": 361,
     "evaluated_on": "held-out test nodes only (ring-based split)",
+    "by_segment": {
+      "ring_accounts": {
+        "roc_auc": null,
+        "avg_precision": null,
+        "precision": 1.0,
+        "recall": 0.25,
+        "f1": 0.4,
+        "tp": 2,
+        "fp": 0,
+        "fn": 6,
+        "tn": 0,
+        "n_nodes": 8,
+        "n_fraud": 8,
+        "n_normal": 0
+      },
+      "isolated_accounts": {
+        "roc_auc": 0.7024,
+        "avg_precision": 0.6198,
+        "precision": 0.6721,
+        "recall": 0.4362,
+        "f1": 0.529,
+        "tp": 82,
+        "fp": 40,
+        "fn": 106,
+        "tn": 361,
+        "n_nodes": 589,
+        "n_fraud": 188,
+        "n_normal": 401
+      },
+      "interpretation": "ring_accounts: nodes that belong to held-out fraud rings \u2014 GNN must generalise ring-topology signal to unseen rings. isolated_accounts: nodes with no fraud-ring membership \u2014 GNN relies purely on volume/degree features. A GNN that adds value over a tabular model should show higher precision/recall on ring_accounts than isolated_accounts."
+    },
     "split": {
       "method": "ring-based",
       "test_ring_frac": 0.2,

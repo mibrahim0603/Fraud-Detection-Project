@@ -91,14 +91,19 @@ def forward(X, adj, W1, W2, Wout, b_out):
 # ─── Ring-based train / test split ───────────────────────────────────────────
 def ring_split(gnn_data: dict, fraud_rings: list):
     """
-    Returns train_mask, test_mask (boolean arrays of shape [N]).
+    Returns train_mask, test_mask, test_ring_mask, test_isolated_mask
+    (all boolean arrays of shape [N]).
 
-    Strategy:
-      1. Collect all node indices that belong to fraud rings.
-      2. Shuffle the rings and hold out TEST_RING_FRAC of them.
-         Every node in a held-out ring goes to the test set.
-      3. Remaining fraud-ring nodes go to the train set.
-      4. Normal nodes (not in any fraud ring) are split randomly 80/20.
+    test_ring_mask     — test nodes that are members of a fraud ring
+                         (co-conspirators, direct fraud participants)
+    test_isolated_mask — test nodes with no fraud ring membership
+                         (independent accounts, structurally distant from fraud)
+
+    These two masks partition test_mask exactly:
+        test_mask == test_ring_mask | test_isolated_mask
+
+    Segmenting evaluation by these masks reveals whether the GNN learns
+    ring-topology signal vs. simple volume/degree features.
     """
     N          = gnn_data["num_nodes"]
     node_index = gnn_data["node_index"]
@@ -133,27 +138,33 @@ def ring_split(gnn_data: dict, fraud_rings: list):
     test_normal_set  = set(normal_nodes[-n_test_normal:])
     train_normal_set = set(normal_nodes[:-n_test_normal])
 
-    train_mask = np.zeros(N, dtype=bool)
-    test_mask  = np.zeros(N, dtype=bool)
+    train_mask          = np.zeros(N, dtype=bool)
+    test_mask           = np.zeros(N, dtype=bool)
+    test_ring_mask      = np.zeros(N, dtype=bool)   # ← NEW: ring-involved test nodes
+    test_isolated_mask  = np.zeros(N, dtype=bool)   # ← NEW: isolated test nodes
 
-    for i in train_ring_nodes:  train_mask[i] = True
-    for i in train_normal_set:  train_mask[i] = True
-    for i in test_ring_nodes:   test_mask[i]  = True
-    for i in test_normal_set:   test_mask[i]  = True
+    for i in train_ring_nodes:  train_mask[i]         = True
+    for i in train_normal_set:  train_mask[i]         = True
+    for i in test_ring_nodes:   test_mask[i]          = True; test_ring_mask[i]     = True
+    for i in test_normal_set:   test_mask[i]          = True; test_isolated_mask[i] = True
 
     print(f"[GNN] Ring split: {len(ring_node_sets)} fraud rings "
           f"({len(ring_node_sets)-n_test_rings} train / {n_test_rings} test)")
-    print(f"[GNN] Train nodes: {train_mask.sum()} "
+    print(f"[GNN] Train nodes      : {train_mask.sum()} "
           f"(fraud={labels[train_mask].sum():.0f}, "
           f"normal={(~labels[train_mask].astype(bool)).sum()})")
-    print(f"[GNN] Test  nodes: {test_mask.sum()} "
+    print(f"[GNN] Test  nodes      : {test_mask.sum()} "
           f"(fraud={labels[test_mask].sum():.0f}, "
           f"normal={(~labels[test_mask].astype(bool)).sum()})")
+    print(f"[GNN]   ring-involved : {test_ring_mask.sum()} nodes")
+    print(f"[GNN]   isolated      : {test_isolated_mask.sum()} nodes")
 
-    # Verify no node is in both sets
-    assert not (train_mask & test_mask).any(), "Mask overlap — split is broken"
+    # Verify no overlap, full partition
+    assert not (train_mask & test_mask).any(),            "train/test overlap"
+    assert not (test_ring_mask & test_isolated_mask).any(), "ring/isolated overlap"
+    assert (test_mask == (test_ring_mask | test_isolated_mask)).all(), "masks don't partition"
 
-    return train_mask, test_mask
+    return train_mask, test_mask, test_ring_mask, test_isolated_mask
 
 
 # ─── Training ────────────────────────────────────────────────────────────────
@@ -164,7 +175,7 @@ def train(gnn_data: dict, fraud_rings: list):
     N     = X_raw.shape[0]
 
     # Normalise using train-set statistics only
-    train_mask, test_mask = ring_split(gnn_data, fraud_rings)
+    train_mask, test_mask, test_ring_mask, test_isolated_mask = ring_split(gnn_data, fraud_rings)
     X_norm, mu, std = normalise(X_raw[train_mask])
     X, _, _         = normalise(X_raw, mu, std)   # apply same scale to all nodes
 
@@ -272,9 +283,55 @@ def train(gnn_data: dict, fraud_rings: list):
         roc_auc  = None   # degenerate split — only one class in test set
         avg_prec = None
 
+    # ── Segmented metrics: ring-involved vs isolated ──────────────────────────
+    def segment_metrics(mask):
+        """Compute precision/recall/f1/roc_auc/avg_precision for a node subset."""
+        if mask.sum() == 0:
+            return None
+        y_seg = y[mask].astype(int)
+        p_seg = probs_final[mask]
+        pr_seg = (p_seg >= 0.5).astype(int)
+        tp_s = int(((pr_seg == 1) & (y_seg == 1)).sum())
+        fp_s = int(((pr_seg == 1) & (y_seg == 0)).sum())
+        fn_s = int(((pr_seg == 0) & (y_seg == 1)).sum())
+        tn_s = int(((pr_seg == 0) & (y_seg == 0)).sum())
+        p_s  = tp_s / (tp_s + fp_s + 1e-8)
+        r_s  = tp_s / (tp_s + fn_s + 1e-8)
+        f_s  = 2 * p_s * r_s / (p_s + r_s + 1e-8)
+        if len(np.unique(y_seg)) == 2:
+            roc_s = round(float(roc_auc_score(y_seg, p_seg)), 4)
+            ap_s  = round(float(average_precision_score(y_seg, p_seg)), 4)
+        else:
+            roc_s = None
+            ap_s  = None
+        return {
+            "roc_auc":       roc_s,
+            "avg_precision": ap_s,
+            "precision":     round(p_s, 4),
+            "recall":        round(r_s, 4),
+            "f1":            round(f_s, 4),
+            "tp": tp_s, "fp": fp_s, "fn": fn_s, "tn": tn_s,
+            "n_nodes":       int(mask.sum()),
+            "n_fraud":       int(y_seg.sum()),
+            "n_normal":      int((y_seg == 0).sum()),
+        }
+
+    seg_ring     = segment_metrics(test_ring_mask)
+    seg_isolated = segment_metrics(test_isolated_mask)
+
     print(f"\n[GNN] TEST SET (held-out rings) — TP={tp} FP={fp} FN={fn} TN={tn}")
-    print(f"[GNN] Test Precision={prec:.4f}  Recall={rec:.4f}  F1={f1:.4f}  "
-          f"ROC-AUC={roc_auc}  Avg-Precision={avg_prec}")
+    print(f"[GNN] Overall   — Prec={prec:.4f}  Rec={rec:.4f}  F1={f1:.4f}  "
+          f"ROC-AUC={roc_auc}  Avg-Prec={avg_prec}")
+    if seg_ring:
+        print(f"[GNN] Ring accs — Prec={seg_ring['precision']:.4f}  "
+              f"Rec={seg_ring['recall']:.4f}  F1={seg_ring['f1']:.4f}  "
+              f"ROC-AUC={seg_ring['roc_auc']}  "
+              f"(n={seg_ring['n_nodes']}, fraud={seg_ring['n_fraud']})")
+    if seg_isolated:
+        print(f"[GNN] Isolated  — Prec={seg_isolated['precision']:.4f}  "
+              f"Rec={seg_isolated['recall']:.4f}  F1={seg_isolated['f1']:.4f}  "
+              f"ROC-AUC={seg_isolated['roc_auc']}  "
+              f"(n={seg_isolated['n_nodes']}, fraud={seg_isolated['n_fraud']})")
 
     node_scores = {
         gnn_data["node_list"][i]: round(float(probs_final[i]), 4)
@@ -307,6 +364,18 @@ def train(gnn_data: dict, fraud_rings: list):
             "f1":            round(f1,   4),
             "tp": tp, "fp": fp, "fn": fn, "tn": tn,
             "evaluated_on": "held-out test nodes only (ring-based split)",
+            "by_segment": {
+                "ring_accounts": seg_ring,
+                "isolated_accounts": seg_isolated,
+                "interpretation": (
+                    "ring_accounts: nodes that belong to held-out fraud rings — "
+                    "GNN must generalise ring-topology signal to unseen rings. "
+                    "isolated_accounts: nodes with no fraud-ring membership — "
+                    "GNN relies purely on volume/degree features. "
+                    "A GNN that adds value over a tabular model should show "
+                    "higher precision/recall on ring_accounts than isolated_accounts."
+                ),
+            },
         },
         "node_scores": node_scores,
         "embeddings":  h2_final.tolist(),

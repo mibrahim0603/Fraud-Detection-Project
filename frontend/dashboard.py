@@ -655,6 +655,65 @@ and trivially encode the node label; including them inflated the previous F1 to 
 
 **Evaluation:** `{gm.get('evaluated_on', 'held-out test nodes (ring-based split)')}`
             """)
+
+        # ── Segmented metrics table ───────────────────────────────────────────
+        by_seg = gm.get("by_segment", {})
+        seg_ring_m  = by_seg.get("ring_accounts")
+        seg_iso_m   = by_seg.get("isolated_accounts")
+        if seg_ring_m or seg_iso_m:
+            st.subheader("📊 Performance: Ring Accounts vs Isolated Accounts")
+            st.caption(
+                "**Ring accounts** — members of held-out fraud rings (unseen conspirator clusters). "
+                "**Isolated accounts** — no fraud-ring membership; GNN uses volume/degree only. "
+                "Higher ring precision/recall shows the GNN genuinely learns ring-topology signal."
+            )
+
+            import pandas as pd
+            rows = []
+            if seg_ring_m:
+                rows.append({
+                    "Segment":       "🔴 Ring-Involved",
+                    "Nodes":         seg_ring_m["n_nodes"],
+                    "Fraud / Normal": f"{seg_ring_m['n_fraud']} / {seg_ring_m['n_normal']}",
+                    "ROC-AUC":       seg_ring_m["roc_auc"] if seg_ring_m["roc_auc"] else "N/A",
+                    "Avg Precision": seg_ring_m["avg_precision"] if seg_ring_m["avg_precision"] else "N/A",
+                    "Precision":     f"{seg_ring_m['precision']*100:.1f}%",
+                    "Recall":        f"{seg_ring_m['recall']*100:.1f}%",
+                    "F1":            f"{seg_ring_m['f1']*100:.1f}%",
+                })
+            if seg_iso_m:
+                rows.append({
+                    "Segment":       "🔵 Isolated",
+                    "Nodes":         seg_iso_m["n_nodes"],
+                    "Fraud / Normal": f"{seg_iso_m['n_fraud']} / {seg_iso_m['n_normal']}",
+                    "ROC-AUC":       seg_iso_m["roc_auc"] if seg_iso_m["roc_auc"] else "N/A",
+                    "Avg Precision": seg_iso_m["avg_precision"] if seg_iso_m["avg_precision"] else "N/A",
+                    "Precision":     f"{seg_iso_m['precision']*100:.1f}%",
+                    "Recall":        f"{seg_iso_m['recall']*100:.1f}%",
+                    "F1":            f"{seg_iso_m['f1']*100:.1f}%",
+                })
+            st.dataframe(pd.DataFrame(rows).set_index("Segment"), use_container_width=True)
+
+            if seg_ring_m and seg_iso_m:
+                ring_f1 = seg_ring_m["f1"]
+                iso_f1  = seg_iso_m["f1"]
+                delta   = ring_f1 - iso_f1
+                if delta > 0.05:
+                    st.success(
+                        f"✅ GNN scores **{delta*100:.1f} F1 points higher** on ring accounts "
+                        f"than isolated accounts — topology signal is adding value beyond "
+                        f"volume/degree features."
+                    )
+                elif delta < -0.05:
+                    st.warning(
+                        f"⚠️ GNN scores **{abs(delta)*100:.1f} F1 points lower** on ring accounts "
+                        f"than isolated accounts — the model is not yet capturing ring-topology signal."
+                    )
+                else:
+                    st.info(
+                        "ℹ️ Ring and isolated performance are similar — "
+                        "the GNN may not be exploiting structural ring patterns yet."
+                    )
         st.markdown("---")
 
     # ── Ring selector ─────────────────────────────────────────────────────────
