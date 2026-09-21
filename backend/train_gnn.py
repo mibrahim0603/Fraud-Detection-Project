@@ -35,6 +35,7 @@ import os
 import json
 import joblib
 import numpy as np
+from sklearn.metrics import roc_auc_score, average_precision_score
 
 DATA_DIR   = os.path.join(os.path.dirname(__file__), "..", "data")
 MODELS_DIR = os.path.join(os.path.dirname(__file__), "..", "models")
@@ -262,8 +263,18 @@ def train(gnn_data: dict, fraud_rings: list):
     rec  = tp / (tp + fn + 1e-8)
     f1   = 2 * prec * rec / (prec + rec + 1e-8)
 
+    # ROC-AUC and average precision require both classes present in test set
+    y_te_int = y_te.astype(int)
+    if len(np.unique(y_te_int)) == 2:
+        roc_auc  = round(float(roc_auc_score(y_te_int, p_te)), 4)
+        avg_prec = round(float(average_precision_score(y_te_int, p_te)), 4)
+    else:
+        roc_auc  = None   # degenerate split — only one class in test set
+        avg_prec = None
+
     print(f"\n[GNN] TEST SET (held-out rings) — TP={tp} FP={fp} FN={fn} TN={tn}")
-    print(f"[GNN] Test Precision={prec:.4f}  Recall={rec:.4f}  F1={f1:.4f}")
+    print(f"[GNN] Test Precision={prec:.4f}  Recall={rec:.4f}  F1={f1:.4f}  "
+          f"ROC-AUC={roc_auc}  Avg-Precision={avg_prec}")
 
     node_scores = {
         gnn_data["node_list"][i]: round(float(probs_final[i]), 4)
@@ -289,9 +300,11 @@ def train(gnn_data: dict, fraud_rings: list):
             ),
         },
         "metrics": {
-            "precision": round(prec, 4),
-            "recall":    round(rec,  4),
-            "f1":        round(f1,   4),
+            "roc_auc":       roc_auc,
+            "avg_precision": avg_prec,
+            "precision":     round(prec, 4),
+            "recall":        round(rec,  4),
+            "f1":            round(f1,   4),
             "tp": tp, "fp": fp, "fn": fn, "tn": tn,
             "evaluated_on": "held-out test nodes only (ring-based split)",
         },
@@ -327,5 +340,22 @@ if __name__ == "__main__":
             "split":       model["split"],
         }, f, indent=2)
 
+    # ── Merge GNN metrics into models/metrics.json ────────────────────────────
+    metrics_path = os.path.join(MODELS_DIR, "metrics.json")
+    if os.path.exists(metrics_path):
+        with open(metrics_path) as f:
+            all_metrics = json.load(f)
+    else:
+        all_metrics = {}
+
+    all_metrics["gnn"] = {
+        **model["metrics"],
+        "split": model["split"],
+    }
+
+    with open(metrics_path, "w") as f:
+        json.dump(all_metrics, f, indent=2)
+
     print(f"\n[GNN] Model saved -> {out_path}")
     print(f"[GNN] Node scores -> {DATA_DIR}/gnn_node_scores.json")
+    print(f"[GNN] GNN metrics merged into {metrics_path}")

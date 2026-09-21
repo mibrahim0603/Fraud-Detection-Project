@@ -622,12 +622,18 @@ elif page == "🕸 Fraud Rings":
         gm = gnn_scores.get("metrics", {})
         sp = gnn_scores.get("split",   {})
 
-        g1, g2, g3, g4 = st.columns(4)
-        g1.metric("GNN Precision", f"{gm.get('precision', 0)*100:.1f}%")
-        g2.metric("GNN Recall",    f"{gm.get('recall',    0)*100:.1f}%")
-        g3.metric("GNN F1",        f"{gm.get('f1',        0)*100:.1f}%",
+        g1, g2, g3, g4, g5, g6 = st.columns(6)
+        roc = gm.get('roc_auc')
+        ap  = gm.get('avg_precision')
+        g1.metric("GNN ROC-AUC",   f"{roc:.4f}" if roc is not None else "N/A",
+                  help="Area under the ROC curve on held-out test rings")
+        g2.metric("GNN Avg Prec",  f"{ap:.4f}"  if ap  is not None else "N/A",
+                  help="Area under the Precision-Recall curve (test rings)")
+        g3.metric("GNN Precision", f"{gm.get('precision', 0)*100:.1f}%")
+        g4.metric("GNN Recall",    f"{gm.get('recall',    0)*100:.1f}%")
+        g5.metric("GNN F1",        f"{gm.get('f1',        0)*100:.1f}%",
                   help="Evaluated on held-out test rings only — not training data")
-        g4.metric("Fraud Nodes Detected",
+        g6.metric("Fraud Nodes Detected",
                   f"{gm.get('tp', 0)} / {gm.get('tp',0)+gm.get('fn',0)}",
                   help="TP / (TP + FN) on test set")
 

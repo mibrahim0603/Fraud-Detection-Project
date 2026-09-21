@@ -152,5 +152,25 @@
     ],
     "explanation": "These features are derived from post-transaction balance states (newbalanceOrig, oldbalanceDest) which are not available before a transaction is settled. In a real-time deployment they must be removed or estimated. The reported ROC-AUC / F1 metrics are an upper bound \u2014 expect lower performance without them.",
     "leaky_fi_share": 0.4176
+  },
+  "gnn": {
+    "roc_auc": 0.6971,
+    "avg_precision": 0.6212,
+    "precision": 0.6774,
+    "recall": 0.4286,
+    "f1": 0.525,
+    "tp": 84,
+    "fp": 40,
+    "fn": 112,
+    "tn": 361,
+    "evaluated_on": "held-out test nodes only (ring-based split)",
+    "split": {
+      "method": "ring-based",
+      "test_ring_frac": 0.2,
+      "test_normal_frac": 0.2,
+      "train_nodes": 2396,
+      "test_nodes": 597,
+      "note": "Loss and gradients computed over train-masked nodes only. Message passing uses the full graph (transductive). Fraud rings are kept whole \u2014 no ring straddles the split. Features fraud_sent and fraud_recv were removed to prevent label leakage (they are direct aggregates of the target label)."
+    }
   }
 }
