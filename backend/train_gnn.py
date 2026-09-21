@@ -317,7 +317,7 @@ if __name__ == "__main__":
     model = train(gnn_data, fraud_rings)
 
     os.makedirs(MODELS_DIR, exist_ok=True)
-    out_path = os.path.join(MODELS_DIR, "gnn_model.pt")
+    out_path = os.path.join(MODELS_DIR, "gnn_model.pkl")
     joblib.dump(model, out_path)
 
     with open(os.path.join(DATA_DIR, "gnn_node_scores.json"), "w") as f:

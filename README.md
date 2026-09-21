@@ -42,7 +42,7 @@ Fraud Detection Project/
 │   ├── train.py                   ← RF + XGBoost training, leakage-aware metrics
 │   ├── app.py                     ← Flask REST API (predict, SHAP, graph endpoints)
 │   ├── graph_builder.py           ← Builds account-transaction graph + fraud rings
-│   ├── train_gnn.py               ← 2-layer GraphSAGE (pure NumPy), saves gnn_model.pt
+│   ├── train_gnn.py               ← 2-layer GraphSAGE (pure NumPy), saves gnn_model.pkl
 │   └── explain.py                 ← SHAP TreeExplainer wrapper for XGBoost
 │
 ├── frontend/
@@ -54,7 +54,7 @@ Fraud Detection Project/
 │   ├── label_encoder.pkl
 │   ├── feature_cols.json
 │   ├── metrics.json               ← includes leakage_note
-│   └── gnn_model.pt               ← GraphSAGE weights (joblib format)
+│   └── gnn_model.pkl               ← GraphSAGE weights (joblib format)
 │
 ├── data/
 │   ├── eda_snapshot.json
@@ -98,7 +98,7 @@ Outputs: `data/fraud_rings.json`, `data/graph_nodes.json`, `data/gnn_features.js
 python backend/train_gnn.py
 ```
 
-Outputs: `models/gnn_model.pt`, `data/gnn_node_scores.json`
+Outputs: `models/gnn_model.pkl`, `data/gnn_node_scores.json`
 
 ### 5. Start the Flask API
 
