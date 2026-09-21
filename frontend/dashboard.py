@@ -620,11 +620,35 @@ elif page == "🕸 Fraud Rings":
     # ── GNN metrics banner ────────────────────────────────────────────────────
     if gnn_scores:
         gm = gnn_scores.get("metrics", {})
+        sp = gnn_scores.get("split",   {})
+
         g1, g2, g3, g4 = st.columns(4)
         g1.metric("GNN Precision", f"{gm.get('precision', 0)*100:.1f}%")
         g2.metric("GNN Recall",    f"{gm.get('recall',    0)*100:.1f}%")
-        g3.metric("GNN F1",        f"{gm.get('f1',        0)*100:.1f}%")
-        g4.metric("Fraud Nodes Detected", f"{gm.get('tp', 0)} / {gm.get('tp',0)+gm.get('fn',0)}")
+        g3.metric("GNN F1",        f"{gm.get('f1',        0)*100:.1f}%",
+                  help="Evaluated on held-out test rings only — not training data")
+        g4.metric("Fraud Nodes Detected",
+                  f"{gm.get('tp', 0)} / {gm.get('tp',0)+gm.get('fn',0)}",
+                  help="TP / (TP + FN) on test set")
+
+        with st.expander("ℹ️ GNN Split Methodology & Leakage Notes", expanded=False):
+            st.markdown(f"""
+**Split method:** `{sp.get('method', 'ring-based')}`
+- **{sp.get('train_nodes','?')}** train nodes · **{sp.get('test_nodes','?')}** test nodes
+- Entire fraud rings are kept on one side of the split — no ring straddles the boundary,
+  preventing test-node labels from leaking through shared edges during message passing.
+- Loss and gradient updates are computed over **train-masked nodes only**.
+- Message passing uses the full graph (transductive setting).
+
+**Features used (leakage-safe):**
+`total_sent`, `total_recv`, `n_tx`, `out_degree`, `in_degree`
+
+**Features removed to prevent label leakage:**
+~~`fraud_sent`~~, ~~`fraud_recv`~~ — these are direct counts of fraud edges
+and trivially encode the node label; including them inflated the previous F1 to ~0.99.
+
+**Evaluation:** `{gm.get('evaluated_on', 'held-out test nodes (ring-based split)')}`
+            """)
         st.markdown("---")
 
     # ── Ring selector ─────────────────────────────────────────────────────────

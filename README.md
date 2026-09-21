@@ -2,6 +2,8 @@
 
 A full-stack financial fraud detection application using **Random Forest + XGBoost ensemble + GraphSAGE GNN** trained on the **AIML Dataset** (6.3M transactions). Features a Flask REST API, a Streamlit dashboard with SHAP explainability and fraud ring visualisation.
 
+> **Honest evaluation note:** The GNN previously reported F1=0.991 due to two compounding issues — label-leaking features (`fraud_sent`/`fraud_recv`) and no train/test split. Both are now fixed: leaking features removed, ring-based split applied, metrics evaluated on held-out rings only. Honest GNN test F1 = **0.525**.
+
 ## 🌐 Live Demo
 
 **[https://fraud-detection-project-hurba2b9rwbrdtg73xvpbb.streamlit.app/](https://fraud-detection-project-hurba2b9rwbrdtg73xvpbb.streamlit.app/)**
@@ -25,7 +27,7 @@ These features carry **~41.8% of combined feature importance** (confirmed by SHA
 | Random Forest | 0.9997 | 0.9976 | 100 trees, depth 15, SMOTE |
 | XGBoost | 0.9998 | 0.9963 | 200 estimators, depth 6 |
 | **Ensemble** | **0.9997** | **0.9970** | Avg RF + XGB probability |
-| GraphSAGE (numpy) | — | **0.9910** | 2-layer, node-level fraud clf |
+| GraphSAGE (numpy) | — | **0.525** | Ring-based split, leakage-safe features, held-out test rings |
 
 ---
 
@@ -155,6 +157,20 @@ Dashboard opens at `http://localhost:8501`
 | `origZeroBalance` | `1 if oldbalanceOrg == 0 else 0` |
 | `destZeroBalance` | `1 if oldbalanceDest == 0 else 0` |
 | `amountRatio` | `amount / (oldbalanceOrg + 1)` |
+
+---
+
+## 🕸 GNN Split Methodology
+
+| Aspect | Detail |
+|---|---|
+| **Split type** | Ring-based (whole fraud rings held out) |
+| **Train/test** | 80% rings train · 20% rings test · 80/20 random for normal nodes |
+| **Why not random node split?** | Co-conspirators share edges — random split lets training neighbours leak fraud signal to test nodes via message passing |
+| **Message passing scope** | Full graph (transductive), but loss/gradients on train-masked nodes only |
+| **Features (safe)** | `total_sent`, `total_recv`, `n_tx`, `out_degree`, `in_degree` |
+| **Features removed** | ~~`fraud_sent`~~, ~~`fraud_recv`~~ — direct label aggregates; caused inflated F1=0.991 |
+| **Honest test F1** | **0.525** on held-out rings |
 
 ---
 

@@ -58,6 +58,8 @@ def build_graph(path: str = DATASET_PATH):
     print(f"[graph] Graph: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges")
 
     # ── Compute per-node aggregate features ──────────────────────────────────
+    # NOTE: fraud_sent / fraud_recv are stored in node_meta for ring visualisation
+    # but are NOT included in the GNN feature matrix (they directly encode the label).
     node_meta = {}
     for node in G.nodes():
         out_edges  = list(G.out_edges(node, data=True))
@@ -66,15 +68,19 @@ def build_graph(path: str = DATASET_PATH):
         total_recv = sum(d["amount"] for _, _, d in in_edges)
         fraud_sent = sum(d["is_fraud"] for _, _, d in out_edges)
         fraud_recv = sum(d["is_fraud"] for _, _, d in in_edges)
-        n_tx       = len(out_edges) + len(in_edges)
+        out_degree = len(out_edges)
+        in_degree  = len(in_edges)
+        n_tx       = out_degree + in_degree
         is_fraud_node = int((fraud_sent + fraud_recv) > 0)
         node_meta[node] = {
-            "id":           node,
-            "total_sent":   round(total_sent, 2),
-            "total_recv":   round(total_recv, 2),
-            "fraud_sent":   fraud_sent,
-            "fraud_recv":   fraud_recv,
-            "n_tx":         n_tx,
+            "id":            node,
+            "total_sent":    round(total_sent, 2),
+            "total_recv":    round(total_recv, 2),
+            "fraud_sent":    fraud_sent,    # kept for ring viz only, NOT in GNN features
+            "fraud_recv":    fraud_recv,    # kept for ring viz only, NOT in GNN features
+            "out_degree":    out_degree,
+            "in_degree":     in_degree,
+            "n_tx":          n_tx,
             "is_fraud_node": is_fraud_node,
         }
 
@@ -124,12 +130,13 @@ def build_graph(path: str = DATASET_PATH):
     labels      = []
     for node in node_list:
         m = node_meta[node]
+        # Leakage-safe features only — fraud_sent / fraud_recv excluded
         features.append([
             m["total_sent"],
             m["total_recv"],
-            float(m["fraud_sent"]),
-            float(m["fraud_recv"]),
             float(m["n_tx"]),
+            float(m["out_degree"]),
+            float(m["in_degree"]),
         ])
         labels.append(m["is_fraud_node"])
 
