@@ -2,7 +2,7 @@
 
 A full-stack financial fraud detection application using **Random Forest + XGBoost ensemble + GraphSAGE GNN** trained on the **AIML Dataset** (6.3M transactions). Features a Flask REST API, a Streamlit dashboard with SHAP explainability and fraud ring visualisation.
 
-> **Honest evaluation note:** The GNN previously reported F1=0.991 due to two compounding issues — label-leaking features (`fraud_sent`/`fraud_recv`) and no train/test split. Both are now fixed: leaking features removed, ring-based split applied, metrics evaluated on held-out rings only. Honest GNN test F1 = **0.525**.
+> **Honest evaluation note:** The GNN previously reported F1=0.991 due to two compounding issues — label-leaking features (`fraud_sent`/`fraud_recv`) and no train/test split. Both are now fixed: leaking features removed, ring-based split applied, metrics evaluated on held-out rings only. Honest GNN overall test: ROC-AUC **0.6971** · Avg-Precision **0.6212** · Precision **67.7%** · Recall **42.9%** · F1 **0.525**.
 
 ## 🌐 Live Demo
 
@@ -22,12 +22,16 @@ These features carry **~41.8% of combined feature importance** (confirmed by SHA
 
 ## 📊 Model Performance
 
-| Model | ROC-AUC | F1 Score | Notes |
-|---|---|---|---|
-| Random Forest | 0.9997 | 0.9976 | 100 trees, depth 15, SMOTE |
-| XGBoost | 0.9998 | 0.9963 | 200 estimators, depth 6 |
-| **Ensemble** | **0.9997** | **0.9970** | Avg RF + XGB probability |
-| GraphSAGE (numpy) | — | **0.525** | Ring-based split, leakage-safe features, held-out test rings |
+| Model | ROC-AUC | Avg Prec | Precision | Recall | F1 | Notes |
+|---|---|---|---|---|---|---|
+| Random Forest | 0.9997 | 0.9986 | 0.9982 | 0.9970 | 0.9976 | 100 trees, depth 15, SMOTE |
+| XGBoost | 0.9998 | 0.9985 | 0.9963 | 0.9963 | 0.9963 | 200 estimators, depth 6 |
+| **Ensemble** | **0.9997** | **0.9986** | **0.9976** | **0.9963** | **0.9970** | Avg RF + XGB probability |
+| GraphSAGE — overall | 0.6971 | 0.6212 | 0.6774 | 0.4286 | 0.5250 | Ring-based split, held-out test rings, 597 test nodes |
+| GraphSAGE — ring accts | N/A¹ | N/A¹ | **1.0000** | 0.2500 | 0.4000 | 8 nodes, all fraud, 4 held-out rings |
+| GraphSAGE — isolated accts | 0.7024 | 0.6198 | 0.6721 | 0.4362 | 0.5290 | 589 nodes, no ring membership |
+
+> ¹ ROC-AUC undefined — all 8 ring-account test nodes are fraud (single class). Precision=1.0 means every ring-account the GNN flagged was a true positive; low recall reflects the small, sparse ring clusters.
 
 ---
 
@@ -170,7 +174,10 @@ Dashboard opens at `http://localhost:8501`
 | **Message passing scope** | Full graph (transductive), but loss/gradients on train-masked nodes only |
 | **Features (safe)** | `total_sent`, `total_recv`, `n_tx`, `out_degree`, `in_degree` |
 | **Features removed** | ~~`fraud_sent`~~, ~~`fraud_recv`~~ — direct label aggregates; caused inflated F1=0.991 |
-| **Honest test F1** | **0.525** on held-out rings |
+| **Overall test metrics** | ROC-AUC **0.6971** · Avg-Prec **0.6212** · Precision **67.7%** · Recall **42.9%** · F1 **0.525** |
+| **Ring-involved accounts** | 8 nodes · Precision **100%** · Recall **25%** · F1 **0.400** · ROC-AUC N/A (all fraud) |
+| **Isolated accounts** | 589 nodes · ROC-AUC **0.7024** · Avg-Prec **0.6198** · Precision **67.2%** · Recall **43.6%** · F1 **0.529** |
+| **Ring vs isolated delta** | F1: ring −0.129 vs isolated — small test rings (8 nodes) limit topology signal measurement |
 
 ---
 
