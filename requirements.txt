@@ -8,3 +8,5 @@ joblib
 numpy
 shap
 networkx
+flask
+flask-cors

@@ -881,7 +881,8 @@ Only **0.129%** of transactions are fraudulent. **SMOTE** is applied to the trai
 ### Graph / GNN
 - Account-transaction directed graph built from 500 fraud + 1000 normal transactions
 - 2-layer GraphSAGE (pure NumPy, no PyTorch) with mean aggregation
-- Node features: total_sent, total_recv, fraud_sent, fraud_recv, n_tx
+- Node features: total_sent, total_recv, n_tx, out_degree, in_degree
+- Features removed (label leakage): ~~fraud_sent~~, ~~fraud_recv~~
 - Fraud rings detected via weakly-connected components containing ≥1 fraud edge
 - GNN scores overlaid on graph nodes in the 🕸 Fraud Rings page
 

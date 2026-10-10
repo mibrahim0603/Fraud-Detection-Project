@@ -1,4 +1,700 @@
 {
+  "with_leakage": {
+    "logistic_regression": {
+      "roc_auc": 0.9795,
+      "avg_precision": 0.8583,
+      "precision": 0.4442,
+      "recall": 0.9105,
+      "f1": 0.5971,
+      "confusion_matrix": [
+        [
+          38128,
+          1872
+        ],
+        [
+          147,
+          1496
+        ]
+      ],
+      "classification_report": {
+        "0": {
+          "precision": 0.9961593729588504,
+          "recall": 0.9532,
+          "f1-score": 0.9742063238581923,
+          "support": 40000.0
+        },
+        "1": {
+          "precision": 0.44418052256532065,
+          "recall": 0.9105295191722459,
+          "f1-score": 0.5970864098982239,
+          "support": 1643.0
+        },
+        "accuracy": 0.9515164613500469,
+        "macro avg": {
+          "precision": 0.7201699477620855,
+          "recall": 0.9318647595861229,
+          "f1-score": 0.7856463668782081,
+          "support": 41643.0
+        },
+        "weighted avg": {
+          "precision": 0.9743813730261709,
+          "recall": 0.9515164613500469,
+          "f1-score": 0.9593272801140762,
+          "support": 41643.0
+        }
+      }
+    },
+    "svc": {
+      "roc_auc": 0.9965,
+      "avg_precision": 0.944,
+      "precision": 0.8938,
+      "recall": 0.9063,
+      "f1": 0.9,
+      "confusion_matrix": [
+        [
+          39823,
+          177
+        ],
+        [
+          154,
+          1489
+        ]
+      ],
+      "classification_report": {
+        "0": {
+          "precision": 0.9961477849763614,
+          "recall": 0.995575,
+          "f1-score": 0.9958613101266615,
+          "support": 40000.0
+        },
+        "1": {
+          "precision": 0.8937575030012005,
+          "recall": 0.9062690200852099,
+          "f1-score": 0.8999697793895437,
+          "support": 1643.0
+        },
+        "accuracy": 0.9920514852436184,
+        "macro avg": {
+          "precision": 0.944952643988781,
+          "recall": 0.950922010042605,
+          "f1-score": 0.9479155447581026,
+          "support": 41643.0
+        },
+        "weighted avg": {
+          "precision": 0.992108036800553,
+          "recall": 0.9920514852436184,
+          "f1-score": 0.9920779663473687,
+          "support": 41643.0
+        }
+      },
+      "svc_train_sample_size": 50000
+    },
+    "decision_tree": {
+      "roc_auc": 0.9989,
+      "avg_precision": 0.9939,
+      "precision": 0.9891,
+      "recall": 0.997,
+      "f1": 0.993,
+      "confusion_matrix": [
+        [
+          39982,
+          18
+        ],
+        [
+          5,
+          1638
+        ]
+      ],
+      "classification_report": {
+        "0": {
+          "precision": 0.9998749593617926,
+          "recall": 0.99955,
+          "f1-score": 0.999712453273657,
+          "support": 40000.0
+        },
+        "1": {
+          "precision": 0.9891304347826086,
+          "recall": 0.996956786366403,
+          "f1-score": 0.9930281903607153,
+          "support": 1643.0
+        },
+        "accuracy": 0.9994476862858104,
+        "macro avg": {
+          "precision": 0.9945026970722006,
+          "recall": 0.9982533931832015,
+          "f1-score": 0.9963703218171862,
+          "support": 41643.0
+        },
+        "weighted avg": {
+          "precision": 0.9994510404826628,
+          "recall": 0.9994476862858104,
+          "f1-score": 0.9994487296234406,
+          "support": 41643.0
+        }
+      }
+    },
+    "random_forest": {
+      "roc_auc": 0.9997,
+      "avg_precision": 0.9986,
+      "precision": 0.9982,
+      "recall": 0.997,
+      "f1": 0.9976,
+      "confusion_matrix": [
+        [
+          39997,
+          3
+        ],
+        [
+          5,
+          1638
+        ]
+      ],
+      "classification_report": {
+        "0": {
+          "precision": 0.9998750062496875,
+          "recall": 0.999925,
+          "f1-score": 0.9999000024999375,
+          "support": 40000.0
+        },
+        "1": {
+          "precision": 0.9981718464351006,
+          "recall": 0.996956786366403,
+          "f1-score": 0.997563946406821,
+          "support": 1643.0
+        },
+        "accuracy": 0.9998078908820209,
+        "macro avg": {
+          "precision": 0.999023426342394,
+          "recall": 0.9984408931832014,
+          "f1-score": 0.9987319744533792,
+          "support": 41643.0
+        },
+        "weighted avg": {
+          "precision": 0.9998078090838886,
+          "recall": 0.9998078908820209,
+          "f1-score": 0.9998078347848116,
+          "support": 41643.0
+        }
+      }
+    },
+    "xgboost": {
+      "roc_auc": 0.9998,
+      "avg_precision": 0.9985,
+      "precision": 0.9963,
+      "recall": 0.9963,
+      "f1": 0.9963,
+      "confusion_matrix": [
+        [
+          39994,
+          6
+        ],
+        [
+          6,
+          1637
+        ]
+      ],
+      "classification_report": {
+        "0": {
+          "precision": 0.99985,
+          "recall": 0.99985,
+          "f1-score": 0.99985,
+          "support": 40000.0
+        },
+        "1": {
+          "precision": 0.9963481436396835,
+          "recall": 0.9963481436396835,
+          "f1-score": 0.9963481436396835,
+          "support": 1643.0
+        },
+        "accuracy": 0.9997118363230315,
+        "macro avg": {
+          "precision": 0.9980990718198417,
+          "recall": 0.9980990718198417,
+          "f1-score": 0.9980990718198417,
+          "support": 41643.0
+        },
+        "weighted avg": {
+          "precision": 0.9997118363230315,
+          "recall": 0.9997118363230315,
+          "f1-score": 0.9997118363230315,
+          "support": 41643.0
+        }
+      }
+    },
+    "ensemble": {
+      "roc_auc": 0.9997,
+      "avg_precision": 0.9986,
+      "precision": 0.9976,
+      "recall": 0.9963,
+      "f1": 0.997,
+      "confusion_matrix": [
+        [
+          39996,
+          4
+        ],
+        [
+          6,
+          1637
+        ]
+      ],
+      "classification_report": {
+        "0": {
+          "precision": 0.999850007499625,
+          "recall": 0.9999,
+          "f1-score": 0.9998750031249218,
+          "support": 40000.0
+        },
+        "1": {
+          "precision": 0.9975624619134674,
+          "recall": 0.9963481436396835,
+          "f1-score": 0.9969549330085262,
+          "support": 1643.0
+        },
+        "accuracy": 0.9997598636025262,
+        "macro avg": {
+          "precision": 0.9987062347065463,
+          "recall": 0.9981240718198418,
+          "f1-score": 0.998414968066724,
+          "support": 41643.0
+        },
+        "weighted avg": {
+          "precision": 0.9997597537379351,
+          "recall": 0.9997598636025262,
+          "f1-score": 0.9997597934810142,
+          "support": 41643.0
+        }
+      }
+    },
+    "feature_importances": {
+      "step": 0.007972953104977561,
+      "type_enc": 0.0321325731099842,
+      "amount": 0.04003846552657749,
+      "oldbalanceOrg": 0.03792782608181623,
+      "newbalanceOrig": 0.31083845644175095,
+      "oldbalanceDest": 0.0026428821746838915,
+      "newbalanceDest": 0.005828345862853379,
+      "errorBalanceOrig": 0.3986567171627838,
+      "errorBalanceDest": 0.01891673264732271,
+      "origZeroBalance": 0.01596531335570075,
+      "destZeroBalance": 0.0024940949458171786,
+      "amountRatio": 0.12658564398041022
+    }
+  },
+  "no_leakage": {
+    "logistic_regression": {
+      "roc_auc": 0.9779,
+      "avg_precision": 0.8575,
+      "precision": 0.4426,
+      "recall": 0.9008,
+      "f1": 0.5935,
+      "confusion_matrix": [
+        [
+          38136,
+          1864
+        ],
+        [
+          163,
+          1480
+        ]
+      ],
+      "classification_report": {
+        "0": {
+          "precision": 0.9957440142040263,
+          "recall": 0.9534,
+          "f1-score": 0.974112057625257,
+          "support": 40000.0
+        },
+        "1": {
+          "precision": 0.44258373205741625,
+          "recall": 0.9007912355447353,
+          "f1-score": 0.5935432123521155,
+          "support": 1643.0
+        },
+        "accuracy": 0.9513243522320678,
+        "macro avg": {
+          "precision": 0.7191638731307213,
+          "recall": 0.9270956177723677,
+          "f1-score": 0.7838276349886862,
+          "support": 41643.0
+        },
+        "weighted avg": {
+          "precision": 0.9739194015784499,
+          "recall": 0.9513243522320678,
+          "f1-score": 0.9590969383306872,
+          "support": 41643.0
+        }
+      }
+    },
+    "svc": {
+      "roc_auc": 0.9894,
+      "avg_precision": 0.8536,
+      "precision": 0.7756,
+      "recall": 0.8436,
+      "f1": 0.8082,
+      "confusion_matrix": [
+        [
+          39599,
+          401
+        ],
+        [
+          257,
+          1386
+        ]
+      ],
+      "classification_report": {
+        "0": {
+          "precision": 0.9935517864311522,
+          "recall": 0.989975,
+          "f1-score": 0.9917601683029453,
+          "support": 40000.0
+        },
+        "1": {
+          "precision": 0.7756015668718522,
+          "recall": 0.8435788192331102,
+          "f1-score": 0.8081632653061225,
+          "support": 1643.0
+        },
+        "accuracy": 0.9841990250462263,
+        "macro avg": {
+          "precision": 0.8845766766515022,
+          "recall": 0.9167769096165551,
+          "f1-score": 0.899961716804534,
+          "support": 41643.0
+        },
+        "weighted avg": {
+          "precision": 0.9849526890861979,
+          "recall": 0.9841990250462263,
+          "f1-score": 0.9845164607981118,
+          "support": 41643.0
+        }
+      },
+      "svc_train_sample_size": 50000
+    },
+    "decision_tree": {
+      "roc_auc": 0.9991,
+      "avg_precision": 0.9964,
+      "precision": 0.9927,
+      "recall": 0.997,
+      "f1": 0.9948,
+      "confusion_matrix": [
+        [
+          39988,
+          12
+        ],
+        [
+          5,
+          1638
+        ]
+      ],
+      "classification_report": {
+        "0": {
+          "precision": 0.9998749781211712,
+          "recall": 0.9997,
+          "f1-score": 0.9997874814046229,
+          "support": 40000.0
+        },
+        "1": {
+          "precision": 0.9927272727272727,
+          "recall": 0.996956786366403,
+          "f1-score": 0.9948375341633768,
+          "support": 1643.0
+        },
+        "accuracy": 0.9995917681242946,
+        "macro avg": {
+          "precision": 0.996301125424222,
+          "recall": 0.9983283931832014,
+          "f1-score": 0.9973125077839999,
+          "support": 41643.0
+        },
+        "weighted avg": {
+          "precision": 0.9995929696212511,
+          "recall": 0.9995917681242946,
+          "f1-score": 0.999592184156169,
+          "support": 41643.0
+        }
+      }
+    },
+    "random_forest": {
+      "roc_auc": 0.9996,
+      "avg_precision": 0.9986,
+      "precision": 0.9982,
+      "recall": 0.997,
+      "f1": 0.9976,
+      "confusion_matrix": [
+        [
+          39997,
+          3
+        ],
+        [
+          5,
+          1638
+        ]
+      ],
+      "classification_report": {
+        "0": {
+          "precision": 0.9998750062496875,
+          "recall": 0.999925,
+          "f1-score": 0.9999000024999375,
+          "support": 40000.0
+        },
+        "1": {
+          "precision": 0.9981718464351006,
+          "recall": 0.996956786366403,
+          "f1-score": 0.997563946406821,
+          "support": 1643.0
+        },
+        "accuracy": 0.9998078908820209,
+        "macro avg": {
+          "precision": 0.999023426342394,
+          "recall": 0.9984408931832014,
+          "f1-score": 0.9987319744533792,
+          "support": 41643.0
+        },
+        "weighted avg": {
+          "precision": 0.9998078090838886,
+          "recall": 0.9998078908820209,
+          "f1-score": 0.9998078347848116,
+          "support": 41643.0
+        }
+      }
+    },
+    "xgboost": {
+      "roc_auc": 0.9997,
+      "avg_precision": 0.9985,
+      "precision": 0.9963,
+      "recall": 0.9963,
+      "f1": 0.9963,
+      "confusion_matrix": [
+        [
+          39994,
+          6
+        ],
+        [
+          6,
+          1637
+        ]
+      ],
+      "classification_report": {
+        "0": {
+          "precision": 0.99985,
+          "recall": 0.99985,
+          "f1-score": 0.99985,
+          "support": 40000.0
+        },
+        "1": {
+          "precision": 0.9963481436396835,
+          "recall": 0.9963481436396835,
+          "f1-score": 0.9963481436396835,
+          "support": 1643.0
+        },
+        "accuracy": 0.9997118363230315,
+        "macro avg": {
+          "precision": 0.9980990718198417,
+          "recall": 0.9980990718198417,
+          "f1-score": 0.9980990718198417,
+          "support": 41643.0
+        },
+        "weighted avg": {
+          "precision": 0.9997118363230315,
+          "recall": 0.9997118363230315,
+          "f1-score": 0.9997118363230315,
+          "support": 41643.0
+        }
+      }
+    },
+    "ensemble": {
+      "roc_auc": 0.9997,
+      "avg_precision": 0.9986,
+      "precision": 0.9963,
+      "recall": 0.9963,
+      "f1": 0.9963,
+      "confusion_matrix": [
+        [
+          39994,
+          6
+        ],
+        [
+          6,
+          1637
+        ]
+      ],
+      "classification_report": {
+        "0": {
+          "precision": 0.99985,
+          "recall": 0.99985,
+          "f1-score": 0.99985,
+          "support": 40000.0
+        },
+        "1": {
+          "precision": 0.9963481436396835,
+          "recall": 0.9963481436396835,
+          "f1-score": 0.9963481436396835,
+          "support": 1643.0
+        },
+        "accuracy": 0.9997118363230315,
+        "macro avg": {
+          "precision": 0.9980990718198417,
+          "recall": 0.9980990718198417,
+          "f1-score": 0.9980990718198417,
+          "support": 41643.0
+        },
+        "weighted avg": {
+          "precision": 0.9997118363230315,
+          "recall": 0.9997118363230315,
+          "f1-score": 0.9997118363230315,
+          "support": 41643.0
+        }
+      }
+    },
+    "feature_importances": {
+      "step": 0.010422288068893589,
+      "type_enc": 0.03065936739948504,
+      "amount": 0.043517747951165496,
+      "oldbalanceOrg": 0.06315071678891773,
+      "newbalanceOrig": 0.5123332888835486,
+      "oldbalanceDest": 0.004329607844950475,
+      "newbalanceDest": 0.00731266839066319,
+      "origZeroBalance": 0.019955767931372523,
+      "destZeroBalance": 0.003980983301643191,
+      "amountRatio": 0.30433757927184396
+    }
+  },
+  "kfold_no_leakage": {
+    "logistic_regression": {
+      "roc_auc_mean": 0.9758,
+      "roc_auc_std": 0.0009,
+      "f1_mean": 0.601,
+      "f1_std": 0.0056,
+      "precision_mean": 0.4528,
+      "precision_std": 0.0064,
+      "recall_mean": 0.894,
+      "recall_std": 0.0051,
+      "n_splits": 5,
+      "feature_set": "no_leakage"
+    },
+    "svc": {
+      "roc_auc_mean": 0.9672,
+      "roc_auc_std": 0.0029,
+      "f1_mean": 0.7645,
+      "f1_std": 0.007,
+      "precision_mean": 0.7698,
+      "precision_std": 0.0104,
+      "recall_mean": 0.7597,
+      "recall_std": 0.016,
+      "n_splits": 5,
+      "feature_set": "no_leakage",
+      "svc_cv_sample_size": 10000
+    },
+    "decision_tree": {
+      "roc_auc_mean": 0.999,
+      "roc_auc_std": 0.0005,
+      "f1_mean": 0.9944,
+      "f1_std": 0.0012,
+      "precision_mean": 0.9915,
+      "precision_std": 0.0025,
+      "recall_mean": 0.9973,
+      "recall_std": 0.0013,
+      "n_splits": 5,
+      "feature_set": "no_leakage"
+    },
+    "random_forest": {
+      "roc_auc_mean": 0.9996,
+      "roc_auc_std": 0.0002,
+      "f1_mean": 0.9973,
+      "f1_std": 0.0008,
+      "precision_mean": 0.9981,
+      "precision_std": 0.001,
+      "recall_mean": 0.9966,
+      "recall_std": 0.0018,
+      "n_splits": 5,
+      "feature_set": "no_leakage"
+    },
+    "xgboost": {
+      "roc_auc_mean": 0.9996,
+      "roc_auc_std": 0.0002,
+      "f1_mean": 0.9964,
+      "f1_std": 0.0015,
+      "precision_mean": 0.9962,
+      "precision_std": 0.0023,
+      "recall_mean": 0.9966,
+      "recall_std": 0.0016,
+      "n_splits": 5,
+      "feature_set": "no_leakage"
+    }
+  },
+  "feature_importances": {
+    "step": 0.007972953104977561,
+    "type_enc": 0.0321325731099842,
+    "amount": 0.04003846552657749,
+    "oldbalanceOrg": 0.03792782608181623,
+    "newbalanceOrig": 0.31083845644175095,
+    "oldbalanceDest": 0.0026428821746838915,
+    "newbalanceDest": 0.005828345862853379,
+    "errorBalanceOrig": 0.3986567171627838,
+    "errorBalanceDest": 0.01891673264732271,
+    "origZeroBalance": 0.01596531335570075,
+    "destZeroBalance": 0.0024940949458171786,
+    "amountRatio": 0.12658564398041022
+  },
+  "leakage_note": {
+    "affected_features": [
+      "errorBalanceOrig",
+      "errorBalanceDest"
+    ],
+    "explanation": "These features are derived from post-transaction balance states (newbalanceOrig, oldbalanceDest) which are not available before a transaction is settled. In a real-time deployment they must be removed or estimated. The reported with_leakage ROC-AUC / F1 metrics are an upper bound -- use no_leakage metrics for realistic deployment estimates.",
+    "leaky_fi_share": 0.4176
+  },
+  "gnn": {
+    "roc_auc": 0.6971,
+    "avg_precision": 0.6212,
+    "precision": 0.6774,
+    "recall": 0.4286,
+    "f1": 0.525,
+    "tp": 84,
+    "fp": 40,
+    "fn": 112,
+    "tn": 361,
+    "evaluated_on": "held-out test nodes only (ring-based split)",
+    "by_segment": {
+      "ring_accounts": {
+        "roc_auc": null,
+        "avg_precision": null,
+        "precision": 1.0,
+        "recall": 0.25,
+        "f1": 0.4,
+        "tp": 2,
+        "fp": 0,
+        "fn": 6,
+        "tn": 0,
+        "n_nodes": 8,
+        "n_fraud": 8,
+        "n_normal": 0
+      },
+      "isolated_accounts": {
+        "roc_auc": 0.7024,
+        "avg_precision": 0.6198,
+        "precision": 0.6721,
+        "recall": 0.4362,
+        "f1": 0.529,
+        "tp": 82,
+        "fp": 40,
+        "fn": 106,
+        "tn": 361,
+        "n_nodes": 589,
+        "n_fraud": 188,
+        "n_normal": 401
+      },
+      "interpretation": "ring_accounts: nodes that belong to held-out fraud rings \u2014 GNN must generalise ring-topology signal to unseen rings. isolated_accounts: nodes with no fraud-ring membership \u2014 GNN relies purely on volume/degree features. A GNN that adds value over a tabular model should show higher precision/recall on ring_accounts than isolated_accounts."
+    },
+    "split": {
+      "method": "ring-based",
+      "test_ring_frac": 0.2,
+      "test_normal_frac": 0.2,
+      "train_nodes": 2396,
+      "test_nodes": 597,
+      "note": "Loss and gradients computed over train-masked nodes only. Message passing uses the full graph (transductive). Fraud rings are kept whole \u2014 no ring straddles the split. Features fraud_sent and fraud_recv were removed to prevent label leakage (they are direct aggregates of the target label)."
+    }
+  },
   "random_forest": {
     "roc_auc": 0.9997,
     "avg_precision": 0.9986,
@@ -129,79 +825,6 @@
         "f1-score": 0.9997597934810142,
         "support": 41643.0
       }
-    }
-  },
-  "feature_importances": {
-    "step": 0.007972953104977561,
-    "type_enc": 0.0321325731099842,
-    "amount": 0.04003846552657749,
-    "oldbalanceOrg": 0.03792782608181623,
-    "newbalanceOrig": 0.31083845644175095,
-    "oldbalanceDest": 0.0026428821746838915,
-    "newbalanceDest": 0.005828345862853379,
-    "errorBalanceOrig": 0.3986567171627838,
-    "errorBalanceDest": 0.01891673264732271,
-    "origZeroBalance": 0.01596531335570075,
-    "destZeroBalance": 0.0024940949458171786,
-    "amountRatio": 0.12658564398041022
-  },
-  "leakage_note": {
-    "affected_features": [
-      "errorBalanceOrig",
-      "errorBalanceDest"
-    ],
-    "explanation": "These features are derived from post-transaction balance states (newbalanceOrig, oldbalanceDest) which are not available before a transaction is settled. In a real-time deployment they must be removed or estimated. The reported ROC-AUC / F1 metrics are an upper bound \u2014 expect lower performance without them.",
-    "leaky_fi_share": 0.4176
-  },
-  "gnn": {
-    "roc_auc": 0.6971,
-    "avg_precision": 0.6212,
-    "precision": 0.6774,
-    "recall": 0.4286,
-    "f1": 0.525,
-    "tp": 84,
-    "fp": 40,
-    "fn": 112,
-    "tn": 361,
-    "evaluated_on": "held-out test nodes only (ring-based split)",
-    "by_segment": {
-      "ring_accounts": {
-        "roc_auc": null,
-        "avg_precision": null,
-        "precision": 1.0,
-        "recall": 0.25,
-        "f1": 0.4,
-        "tp": 2,
-        "fp": 0,
-        "fn": 6,
-        "tn": 0,
-        "n_nodes": 8,
-        "n_fraud": 8,
-        "n_normal": 0
-      },
-      "isolated_accounts": {
-        "roc_auc": 0.7024,
-        "avg_precision": 0.6198,
-        "precision": 0.6721,
-        "recall": 0.4362,
-        "f1": 0.529,
-        "tp": 82,
-        "fp": 40,
-        "fn": 106,
-        "tn": 361,
-        "n_nodes": 589,
-        "n_fraud": 188,
-        "n_normal": 401
-      },
-      "interpretation": "ring_accounts: nodes that belong to held-out fraud rings \u2014 GNN must generalise ring-topology signal to unseen rings. isolated_accounts: nodes with no fraud-ring membership \u2014 GNN relies purely on volume/degree features. A GNN that adds value over a tabular model should show higher precision/recall on ring_accounts than isolated_accounts."
-    },
-    "split": {
-      "method": "ring-based",
-      "test_ring_frac": 0.2,
-      "test_normal_frac": 0.2,
-      "train_nodes": 2396,
-      "test_nodes": 597,
-      "note": "Loss and gradients computed over train-masked nodes only. Message passing uses the full graph (transductive). Fraud rings are kept whole \u2014 no ring straddles the split. Features fraud_sent and fraud_recv were removed to prevent label leakage (they are direct aggregates of the target label)."
     }
   }
 }

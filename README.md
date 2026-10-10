@@ -64,8 +64,10 @@ Fraud Detection Project/
 │   ├── eda_snapshot.json
 │   ├── fraud_rings.json           ← Top-20 fraud rings (nodes + edges)
 │   ├── graph_nodes.json           ← All account node metadata
+│   ├── graph_edges.json           ← All transaction edges with features
 │   ├── gnn_features.json          ← Node feature matrix for GNN training
-│   └── gnn_node_scores.json       ← Per-node GNN fraud probabilities
+│   ├── gnn_node_scores.json       ← Per-node GNN fraud probabilities
+│   └── kfold_raw_scores.json      ← Raw per-fold CV scores (run_kfold.py)
 │
 └── README.md
 ```
