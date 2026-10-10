@@ -21,8 +21,9 @@ Metrics reported per model
   recall_mean    / recall_std
 
 Output saved to:
-  models/metrics.json        — aggregated mean ± std under key "kfold_no_leakage"
-  data/kfold_raw_scores.json — raw per-fold scores for each model
+  models/metrics.json        — aggregated mean ± std under keys
+                               "kfold_no_leakage", "kfold_strict", "kfold_pre_transaction"
+  data/kfold_raw_scores.json — raw per-fold scores for all three feature sets
 All pre-existing keys in metrics.json are preserved unchanged.
 """
 
@@ -58,6 +59,15 @@ RANDOM_STATE     = 42
 
 # ─── 1. Load & engineer features ─────────────────────────────────────────────
 def load_and_engineer(path: str, sample_size: int = 200_000):
+    """
+    Returns feature matrices for all three CV feature sets and the label vector.
+
+    Feature sets
+    ─────────────
+    no_leakage      : 10 features — removes errorBalanceOrig / errorBalanceDest
+    strict          : 3 features  — step, type_enc, amount only
+    pre_transaction : 5 features  — step, type_enc, amount, oldbalanceOrg, oldbalanceDest
+    """
     print(f"[kfold] Loading dataset …")
     df = pd.read_csv(path)
     fraud     = df[df["isFraud"] == 1]
@@ -88,11 +98,17 @@ def load_and_engineer(path: str, sample_size: int = 200_000):
         "origZeroBalance", "destZeroBalance",
         "amountRatio",
     ]
-    feature_cols_no = [c for c in feature_cols_with if c not in LEAKAGE_FEATURES]
+    feature_cols_no     = [c for c in feature_cols_with if c not in LEAKAGE_FEATURES]
+    feature_cols_strict = ["step", "type_enc", "amount"]
+    feature_cols_pre_tx = ["step", "type_enc", "amount", "oldbalanceOrg", "oldbalanceDest"]
 
-    X = df[feature_cols_no].values
     y = df["isFraud"].values
-    return X, y
+    return (
+        df[feature_cols_no].values,
+        df[feature_cols_strict].values,
+        df[feature_cols_pre_tx].values,
+        y,
+    )
 
 
 # ─── 2. Build model factories (fresh instance each fold) ─────────────────────
@@ -130,8 +146,12 @@ def make_models(scale_pos: float):
     }
 
 
-# ─── 3. Run K-Fold CV ─────────────────────────────────────────────────────────
-def run_kfold(X: np.ndarray, y: np.ndarray) -> dict:
+# ─── 3. Run K-Fold CV for one feature matrix ─────────────────────────────────
+def run_kfold(X: np.ndarray, y: np.ndarray, feature_set_name: str) -> tuple:
+    """
+    Runs 5-fold stratified CV on X/y.
+    Returns (aggregated_results dict, raw_scores dict).
+    """
     skf   = StratifiedKFold(n_splits=N_SPLITS, shuffle=True,
                             random_state=RANDOM_STATE)
     smote = SMOTE(random_state=RANDOM_STATE, k_neighbors=5)
@@ -144,13 +164,13 @@ def run_kfold(X: np.ndarray, y: np.ndarray) -> dict:
     }
 
     for fold_idx, (train_idx, test_idx) in enumerate(skf.split(X, y), 1):
-        print(f"\n[kfold] -- Fold {fold_idx}/{N_SPLITS} --------------------------")
+        print(f"\n[kfold:{feature_set_name}] -- Fold {fold_idx}/{N_SPLITS} --------")
         X_tr_raw, X_te = X[train_idx], X[test_idx]
         y_tr_raw, y_te = y[train_idx], y[test_idx]
 
         # SMOTE on fold training split
         X_tr, y_tr = smote.fit_resample(X_tr_raw, y_tr_raw)
-        print(f"[kfold]   SMOTE -> train {X_tr.shape[0]:,} "
+        print(f"[kfold:{feature_set_name}]   SMOTE -> train {X_tr.shape[0]:,} "
               f"(fraud={y_tr.sum():,})")
 
         # Class weight ratio for XGBoost (computed from SMOTE'd train set)
@@ -171,7 +191,7 @@ def run_kfold(X: np.ndarray, y: np.ndarray) -> dict:
         scaler_svc = StandardScaler()
         X_svc_sc   = scaler_svc.fit_transform(X_svc)
         X_te_svc   = scaler_svc.transform(X_te)
-        print(f"[kfold]   SVC sample: {len(X_svc):,} rows (from fold train split)")
+        print(f"[kfold:{feature_set_name}]   SVC sample: {len(X_svc):,} rows")
 
         models = make_models(scale_pos)
 
@@ -195,7 +215,7 @@ def run_kfold(X: np.ndarray, y: np.ndarray) -> dict:
             scores[mk]["f1"].append(float(f1))
             scores[mk]["precision"].append(float(p))
             scores[mk]["recall"].append(float(r))
-            print(f"[kfold]   {mk:<22}  "
+            print(f"[kfold:{feature_set_name}]   {mk:<22}  "
                   f"roc={roc:.4f}  f1={f1:.4f}  "
                   f"prec={p:.4f}  rec={r:.4f}")
 
@@ -212,7 +232,7 @@ def run_kfold(X: np.ndarray, y: np.ndarray) -> dict:
             "recall_mean":    round(float(np.mean(fold_scores["recall"])),    4),
             "recall_std":     round(float(np.std( fold_scores["recall"])),    4),
             "n_splits":       N_SPLITS,
-            "feature_set":    "no_leakage",
+            "feature_set":    feature_set_name,
         }
         if mk == "svc":
             results[mk]["svc_cv_sample_size"] = SVC_CV_SAMPLE
@@ -221,7 +241,12 @@ def run_kfold(X: np.ndarray, y: np.ndarray) -> dict:
 
 
 # ─── 4. Merge into metrics.json and save raw scores ──────────────────────────
-def save_kfold_results(kfold_results: dict, raw_scores: dict):
+def save_kfold_results(
+    results_no:  dict, raw_no:  dict,
+    results_st:  dict, raw_st:  dict,
+    results_pt:  dict, raw_pt:  dict,
+):
+    """Merges all three CV result sets into metrics.json and kfold_raw_scores.json."""
     # Aggregated results → models/metrics.json
     metrics_path = os.path.join(MODELS_DIR, "metrics.json")
     if os.path.exists(metrics_path):
@@ -230,24 +255,32 @@ def save_kfold_results(kfold_results: dict, raw_scores: dict):
     else:
         all_metrics = {}
 
-    all_metrics["kfold_no_leakage"] = kfold_results
+    all_metrics["kfold_no_leakage"]      = results_no
+    all_metrics["kfold_strict"]          = results_st
+    all_metrics["kfold_pre_transaction"] = results_pt
 
     with open(metrics_path, "w") as f:
         json.dump(all_metrics, f, indent=2)
-    print(f"[kfold] Aggregated results saved → {metrics_path}  (key: kfold_no_leakage)")
+    print(f"[kfold] Aggregated results saved → {metrics_path}  "
+          f"(keys: kfold_no_leakage, kfold_strict, kfold_pre_transaction)")
 
     # Raw per-fold scores → data/kfold_raw_scores.json
     os.makedirs(DATA_DIR, exist_ok=True)
     raw_path = os.path.join(DATA_DIR, "kfold_raw_scores.json")
-    raw_out = {
-        "n_splits":          N_SPLITS,
-        "feature_set":       "no_leakage",
-        "svc_cv_sample_size": SVC_CV_SAMPLE,
-        "per_fold_scores":   {
+
+    def _pack(raw_scores):
+        return {
             mk: {metric: [round(v, 6) for v in vals]
                  for metric, vals in fold_scores.items()}
             for mk, fold_scores in raw_scores.items()
-        },
+        }
+
+    raw_out = {
+        "n_splits":           N_SPLITS,
+        "svc_cv_sample_size": SVC_CV_SAMPLE,
+        "no_leakage":      {"feature_set": "no_leakage",      "per_fold_scores": _pack(raw_no)},
+        "strict":          {"feature_set": "strict",          "per_fold_scores": _pack(raw_st)},
+        "pre_transaction": {"feature_set": "pre_transaction", "per_fold_scores": _pack(raw_pt)},
     }
     with open(raw_path, "w") as f:
         json.dump(raw_out, f, indent=2)
@@ -255,7 +288,7 @@ def save_kfold_results(kfold_results: dict, raw_scores: dict):
 
 
 # ─── 5. Pretty-print summary ──────────────────────────────────────────────────
-def print_kfold_summary(results: dict):
+def print_kfold_summary(label: str, results: dict):
     col_w = [22, 14, 14, 14, 14]
     header = (
         f"{'Model':<{col_w[0]}} {'ROC-AUC':>{col_w[1]}} "
@@ -271,7 +304,7 @@ def print_kfold_summary(results: dict):
     }
 
     print(f"\n{'='*len(sep)}")
-    print(f"  5-Fold CV · no_leakage feature set · mean ± std")
+    print(f"  5-Fold CV · {label} feature set · mean ± std")
     print(f"{'='*len(sep)}")
     print(header)
     print(sep)
@@ -288,10 +321,58 @@ def print_kfold_summary(results: dict):
     print(sep)
 
 
+# ─── 6. Per-fold detail printer (RF + XGB, requested feature sets) ────────────
+def print_rf_xgb_per_fold(label: str, raw_scores: dict):
+    sep = "-" * 62
+    print(f"\n{'='*62}")
+    print(f"  Per-fold scores · {label} · RandomForest & XGBoost")
+    print(f"{'='*62}")
+    for mk in ("random_forest", "xgboost"):
+        fs = raw_scores[mk]
+        print(f"\n  {mk}")
+        print(f"  {'Fold':<6} {'ROC-AUC':>10} {'F1':>10} {'Precision':>10} {'Recall':>10}")
+        print(f"  {sep}")
+        for i in range(N_SPLITS):
+            print(f"  {i+1:<6} "
+                  f"{fs['roc_auc'][i]:>10.4f} "
+                  f"{fs['f1'][i]:>10.4f} "
+                  f"{fs['precision'][i]:>10.4f} "
+                  f"{fs['recall'][i]:>10.4f}")
+        print(f"  {sep}")
+        print(f"  {'mean':<6} "
+              f"{float(np.mean(fs['roc_auc'])):>10.4f} "
+              f"{float(np.mean(fs['f1'])):>10.4f} "
+              f"{float(np.mean(fs['precision'])):>10.4f} "
+              f"{float(np.mean(fs['recall'])):>10.4f}")
+
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    X, y = load_and_engineer(DATASET_PATH)
-    kfold_results, raw_scores = run_kfold(X, y)
-    save_kfold_results(kfold_results, raw_scores)
-    print_kfold_summary(kfold_results)
+    X_no, X_strict, X_pre_tx, y = load_and_engineer(DATASET_PATH)
+
+    print("\n" + "="*62)
+    print("K-FOLD CV: no_leakage feature set")
+    print("="*62)
+    results_no, raw_no = run_kfold(X_no,     y, "no_leakage")
+
+    print("\n" + "="*62)
+    print("K-FOLD CV: strict feature set  (step, type_enc, amount)")
+    print("="*62)
+    results_st, raw_st = run_kfold(X_strict, y, "strict")
+
+    print("\n" + "="*62)
+    print("K-FOLD CV: pre_transaction feature set")
+    print("="*62)
+    results_pt, raw_pt = run_kfold(X_pre_tx, y, "pre_transaction")
+
+    save_kfold_results(results_no, raw_no, results_st, raw_st, results_pt, raw_pt)
+
+    print_kfold_summary("no_leakage",      results_no)
+    print_kfold_summary("strict",          results_st)
+    print_kfold_summary("pre_transaction", results_pt)
+
+    # ── Per-fold detail for RF + XGB on strict and pre_transaction ────────────
+    print_rf_xgb_per_fold("strict",          raw_st)
+    print_rf_xgb_per_fold("pre_transaction", raw_pt)
+
     print("\n[kfold] Done.")

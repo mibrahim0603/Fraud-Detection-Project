@@ -82,8 +82,15 @@ def load_data(path: str, sample_size: int = 200_000) -> pd.DataFrame:
 # ─── 2. Feature Engineering ──────────────────────────────────────────────────
 def engineer_features(df: pd.DataFrame):
     """
-    Returns df with new columns, full feature list (with_leakage), and LabelEncoder.
-    The no_leakage list is derived by removing LEAKAGE_FEATURES.
+    Returns df with new columns, and all four feature lists, and LabelEncoder.
+
+    Feature sets
+    ─────────────
+    with_leakage    : all 12 features (post-tx balance states included)
+    no_leakage      : 10 features — removes errorBalanceOrig / errorBalanceDest
+    strict          : 3 features  — step, type_enc, amount only
+    pre_transaction : 5 features  — step, type_enc, amount, oldbalanceOrg, oldbalanceDest
+                      (only values knowable before a transaction settles)
     """
     df = df.copy()
     le = LabelEncoder()
@@ -106,9 +113,11 @@ def engineer_features(df: pd.DataFrame):
         "origZeroBalance", "destZeroBalance",
         "amountRatio",
     ]
-    feature_cols_no = [f for f in feature_cols_with if f not in LEAKAGE_FEATURES]
+    feature_cols_no      = [f for f in feature_cols_with if f not in LEAKAGE_FEATURES]
+    feature_cols_strict  = ["step", "type_enc", "amount"]
+    feature_cols_pre_tx  = ["step", "type_enc", "amount", "oldbalanceOrg", "oldbalanceDest"]
 
-    return df, feature_cols_with, feature_cols_no, le
+    return df, feature_cols_with, feature_cols_no, feature_cols_strict, feature_cols_pre_tx, le
 
 
 # ─── 3. Metrics helper ───────────────────────────────────────────────────────
@@ -323,8 +332,12 @@ def print_summary(all_metrics: dict):
     )
     sep = "-" * sum(col_w + [5])
 
-    for fs_key, fs_label in [("with_leakage", "WITH leakage features"),
-                              ("no_leakage",   "WITHOUT leakage features (deployable)")]:
+    for fs_key, fs_label in [
+        ("with_leakage",    "WITH leakage features"),
+        ("no_leakage",      "WITHOUT leakage features (deployable)"),
+        ("strict",          "STRICT — step, type_enc, amount only"),
+        ("pre_transaction", "PRE-TRANSACTION — step, type_enc, amount, oldbalanceOrg, oldbalanceDest"),
+    ]:
         fs = all_metrics.get(fs_key, {})
         print(f"\n{'='*len(sep)}")
         print(f"  Feature set: {fs_label}")
@@ -373,28 +386,35 @@ def print_summary(all_metrics: dict):
     print(sep)
 
     # ── K-Fold CV summary (printed only when key is present) ─────────────────
-    kf = all_metrics.get("kfold_no_leakage")
-    if kf:
-        kf_keys = [
-            "logistic_regression", "svc", "decision_tree",
-            "random_forest", "xgboost",
-        ]
-        kf_display = {
-            "logistic_regression": "LogisticRegression",
-            "svc":                 "SVC (CV sample)",
-            "decision_tree":       "DecisionTree",
-            "random_forest":       "RandomForest",
-            "xgboost":             "XGBoost",
-        }
-        kf_col_w = [22, 16, 16, 16, 16]
-        kf_header = (
-            f"{'Model':<{kf_col_w[0]}} {'ROC-AUC':>{kf_col_w[1]}} "
-            f"{'F1':>{kf_col_w[2]}} {'Precision':>{kf_col_w[3]}} "
-            f"{'Recall':>{kf_col_w[4]}}"
-        )
-        kf_sep = "-" * sum(kf_col_w + [4])
+    kf_keys = [
+        "logistic_regression", "svc", "decision_tree",
+        "random_forest", "xgboost",
+    ]
+    kf_display = {
+        "logistic_regression": "LogisticRegression",
+        "svc":                 "SVC (CV sample)",
+        "decision_tree":       "DecisionTree",
+        "random_forest":       "RandomForest",
+        "xgboost":             "XGBoost",
+    }
+    kf_col_w = [22, 16, 16, 16, 16]
+    kf_header = (
+        f"{'Model':<{kf_col_w[0]}} {'ROC-AUC':>{kf_col_w[1]}} "
+        f"{'F1':>{kf_col_w[2]}} {'Precision':>{kf_col_w[3]}} "
+        f"{'Recall':>{kf_col_w[4]}}"
+    )
+    kf_sep = "-" * sum(kf_col_w + [4])
+
+    for kf_key, kf_label in [
+        ("kfold_no_leakage",      "no_leakage feature set"),
+        ("kfold_strict",          "strict feature set"),
+        ("kfold_pre_transaction", "pre_transaction feature set"),
+    ]:
+        kf = all_metrics.get(kf_key)
+        if not kf:
+            continue
         print(f"\n{'='*len(kf_sep)}")
-        print("  5-Fold CV · no_leakage feature set · mean ± std")
+        print(f"  5-Fold CV · {kf_label} · mean ± std")
         print(f"{'='*len(kf_sep)}")
         print(kf_header)
         print(kf_sep)
@@ -415,7 +435,7 @@ def print_summary(all_metrics: dict):
 # ─── Main ────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     df_sampled = load_data(DATASET_PATH)
-    df_sampled, feature_cols_with, feature_cols_no, le = engineer_features(df_sampled)
+    df_sampled, feature_cols_with, feature_cols_no, feature_cols_strict, feature_cols_pre_tx, le = engineer_features(df_sampled)
 
     # EDA snapshot from full CSV
     print("[INFO] Building EDA snapshot from full dataset ...")
@@ -450,20 +470,42 @@ if __name__ == "__main__":
         X_test_full, y_test, col_index,
     )
 
+    # ── strict ────────────────────────────────────────────────────────────────
+    print("\n" + "="*60)
+    print("TRAINING: strict feature set  (step, type_enc, amount)")
+    print("="*60)
+    rf_st, xgb_st, results_st = train_feature_set(
+        df_sampled, feature_cols_strict, "strict",
+        X_test_full, y_test, col_index,
+    )
+
+    # ── pre_transaction ───────────────────────────────────────────────────────
+    print("\n" + "="*60)
+    print("TRAINING: pre_transaction feature set  (step, type_enc, amount, oldbalanceOrg, oldbalanceDest)")
+    print("="*60)
+    rf_pt, xgb_pt, results_pt = train_feature_set(
+        df_sampled, feature_cols_pre_tx, "pre_transaction",
+        X_test_full, y_test, col_index,
+    )
+
     # ── Build final metrics.json ──────────────────────────────────────────────
-    # Preserve existing GNN block if present
-    existing_gnn = {}
+    # Preserve existing keys (GNN, kfold) written by other scripts
+    existing_extras = {}
     metrics_path = os.path.join(MODELS_DIR, "metrics.json")
     if os.path.exists(metrics_path):
         with open(metrics_path) as f:
             existing = json.load(f)
-        existing_gnn = existing.get("gnn", {})
+        for key in ("gnn", "kfold_no_leakage", "kfold_strict", "kfold_pre_transaction"):
+            if key in existing:
+                existing_extras[key] = existing[key]
 
     leakage_features = LEAKAGE_FEATURES
     fi_with = results_wl.get("feature_importances", {})
     all_metrics = {
-        "with_leakage": results_wl,
-        "no_leakage":   results_nl,
+        "with_leakage":    results_wl,
+        "no_leakage":      results_nl,
+        "strict":          results_st,
+        "pre_transaction": results_pt,
         "feature_importances": fi_with,  # kept at top level for SHAP page backwards compat
         "leakage_note": {
             "affected_features": leakage_features,
@@ -478,8 +520,8 @@ if __name__ == "__main__":
                 sum(fi_with.get(f, 0) for f in leakage_features), 4
             ),
         },
-        "gnn": existing_gnn,
     }
+    all_metrics.update(existing_extras)
 
     # Also expose the with_leakage RF/XGB/ensemble at top level for
     # backwards-compatibility with dashboard's 📊 Model Metrics page
@@ -491,7 +533,11 @@ if __name__ == "__main__":
     print_summary(all_metrics)
 
     print("\n[DONE] Training complete.")
-    print(f"  with_leakage  Ensemble ROC-AUC : {results_wl['ensemble']['roc_auc']}")
-    print(f"  with_leakage  Ensemble F1      : {results_wl['ensemble']['f1']}")
-    print(f"  no_leakage    Ensemble ROC-AUC : {results_nl['ensemble']['roc_auc']}")
-    print(f"  no_leakage    Ensemble F1      : {results_nl['ensemble']['f1']}")
+    print(f"  with_leakage    Ensemble ROC-AUC : {results_wl['ensemble']['roc_auc']}")
+    print(f"  with_leakage    Ensemble F1      : {results_wl['ensemble']['f1']}")
+    print(f"  no_leakage      Ensemble ROC-AUC : {results_nl['ensemble']['roc_auc']}")
+    print(f"  no_leakage      Ensemble F1      : {results_nl['ensemble']['f1']}")
+    print(f"  strict          Ensemble ROC-AUC : {results_st['ensemble']['roc_auc']}")
+    print(f"  strict          Ensemble F1      : {results_st['ensemble']['f1']}")
+    print(f"  pre_transaction Ensemble ROC-AUC : {results_pt['ensemble']['roc_auc']}")
+    print(f"  pre_transaction Ensemble F1      : {results_pt['ensemble']['f1']}")
