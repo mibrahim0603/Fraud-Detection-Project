@@ -263,61 +263,131 @@ if page == "🏠 Overview":
 # ═══════════════════════════════════════════════════════════════════════════════
 elif page == "📊 Model Metrics":
     st.markdown('<p class="main-header">📊 Model Performance Metrics</p>', unsafe_allow_html=True)
-    st.caption("Evaluation on 20% held-out test set. SMOTE applied only on training data.")
+    st.caption("Evaluation on 20% held-out test set · SMOTE applied only on training data · all six models evaluated per feature set.")
     st.markdown("---")
 
     if not metrics:
         st.error("Metrics not found. Make sure `models/metrics.json` is committed to your repo.")
         st.stop()
 
-    model_names   = ["random_forest", "xgboost", "ensemble"]
-    display_names = {"random_forest": "Random Forest", "xgboost": "XGBoost", "ensemble": "Ensemble (Avg)"}
+    # ── Leakage / feature-set banner ──────────────────────────────────────────
+    st.info(
+        "**⚠️ Balance column advisory (PaySim dataset)**  \n"
+        "The PaySim documentation flags all four post-transaction balance columns "
+        "(`oldbalanceOrg`, `newbalanceOrig`, `oldbalanceDest`, `newbalanceDest`) as "
+        "unsuitable inputs for fraud detection because they are derived from the transaction "
+        "outcome, not available at decision time.  \n"
+        "- **Full (all features)** and **Error-removed** include these columns → results are "
+        "**upper bounds**, not realistic deployment estimates.  \n"
+        "- **Pre-transaction** uses only `oldbalanceOrg` and `oldbalanceDest` (values known "
+        "before settlement) — a partial improvement.  \n"
+        "- **Strict** (`step`, `type`, `amount` only) is the only set that **fully avoids** "
+        "all four balance columns and reflects truly deployable performance."
+    )
+    st.markdown("---")
 
-    st.subheader("Model Comparison")
-    rows = []
-    for m in model_names:
-        d = metrics.get(m, {})
-        rows.append({
-            "Model":         display_names[m],
-            "ROC-AUC":       d.get("roc_auc", "-"),
-            "Avg Precision": d.get("avg_precision", "-"),
-            "Precision":     d.get("precision", "-"),
-            "Recall":        d.get("recall", "-"),
-            "F1 Score":      d.get("f1", "-"),
-        })
-    df_s = pd.DataFrame(rows).set_index("Model")
-    st.dataframe(df_s.style.highlight_max(axis=0, color="#d4edda"), use_container_width=True)
+    # ── Shared display helpers ─────────────────────────────────────────────────
+    _ALL_MODELS = [
+        "logistic_regression", "svc", "decision_tree",
+        "random_forest", "xgboost", "ensemble",
+    ]
+    _MODEL_DISPLAY = {
+        "logistic_regression": "LogisticRegression",
+        "svc":                 "SVC",
+        "decision_tree":       "DecisionTree",
+        "random_forest":       "RandomForest",
+        "xgboost":             "XGBoost",
+        "ensemble":            "Ensemble (RF+XGB)",
+    }
+    _METRIC_KEYS   = ["roc_auc", "avg_precision", "precision", "recall", "f1"]
+    _METRIC_LABELS = ["ROC-AUC", "Avg Precision", "Precision", "Recall", "F1"]
 
-    st.subheader("Metric Comparison Chart")
-    mk = ["roc_auc", "avg_precision", "precision", "recall", "f1"]
-    ml = ["ROC-AUC", "Avg Precision", "Precision", "Recall", "F1"]
-    fig = go.Figure()
-    for i, m in enumerate(model_names):
-        d = metrics.get(m, {})
-        fig.add_trace(go.Bar(
-            name=display_names[m], x=ml,
-            y=[d.get(k, 0) for k in mk],
-            marker_color=["#3498db", "#e67e22", "#e74c3c"][i],
-        ))
-    fig.update_layout(barmode="group", yaxis_range=[0.95, 1.0], height=350)
-    st.plotly_chart(fig, use_container_width=True)
+    # ── Feature-set selector ──────────────────────────────────────────────────
+    st.subheader("🔢 Feature Set")
+    _FS_OPTIONS = {
+        "Full (all features)":                                    "with_leakage",
+        "Error-removed":                                          "no_leakage",
+        "Pre-transaction (step, type, amount, oldbalanceOrg, oldbalanceDest)": "pre_transaction",
+        "Strict (step, type, amount)":                            "strict",
+    }
+    _fs_label = st.radio(
+        "Select feature set to inspect",
+        list(_FS_OPTIONS.keys()),
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+    _fs_key = _FS_OPTIONS[_fs_label]
+    _fs_data = metrics.get(_fs_key)
 
-    st.subheader("Confusion Matrices")
-    cm_cols = st.columns(3)
-    for i, m in enumerate(model_names):
-        cm = metrics.get(m, {}).get("confusion_matrix", [[0, 0], [0, 0]])
-        with cm_cols[i]:
-            st.caption(display_names[m])
-            fig = px.imshow(
-                cm, text_auto=True,
-                labels=dict(x="Predicted", y="Actual"),
-                x=["Not Fraud", "Fraud"], y=["Not Fraud", "Fraud"],
-                color_continuous_scale="Blues",
-            )
-            fig.update_layout(height=250, margin=dict(t=10, b=10))
-            st.plotly_chart(fig, use_container_width=True)
+    if _fs_data is None:
+        st.warning(f"Feature set **{_fs_label}** (`{_fs_key}`) is not available in metrics.json.")
+    else:
+        # ── Model comparison table ─────────────────────────────────────────────
+        st.subheader("Model Comparison")
+        _rows = []
+        for _mk in _ALL_MODELS:
+            _d = _fs_data.get(_mk)
+            if _d is None or not isinstance(_d, dict):
+                continue
+            _rows.append({
+                "Model":         _MODEL_DISPLAY[_mk],
+                "ROC-AUC":       _d.get("roc_auc",       "n/a"),
+                "Avg Precision": _d.get("avg_precision",  "n/a"),
+                "Precision":     _d.get("precision",      "n/a"),
+                "Recall":        _d.get("recall",         "n/a"),
+                "F1":            _d.get("f1",             "n/a"),
+            })
+        if _rows:
+            _df_s = pd.DataFrame(_rows).set_index("Model")
+            # Only highlight numeric columns
+            _num_cols = [c for c in _df_s.columns if _df_s[c].dtype != object]
+            try:
+                _styled = _df_s.style.highlight_max(subset=_num_cols, axis=0, color="#d4edda")
+            except Exception:
+                _styled = _df_s
+            st.dataframe(_styled, use_container_width=True)
 
-    st.subheader("Feature Importance (Ensemble Average)")
+        # ── Metric comparison bar chart ────────────────────────────────────────
+        st.subheader("Metric Comparison Chart")
+        _fig_bar = go.Figure()
+        _colors  = ["#3498db","#e67e22","#e74c3c","#27ae60","#8e44ad","#f39c12"]
+        for _ci, _mk in enumerate(_ALL_MODELS):
+            _d = _fs_data.get(_mk)
+            if _d is None or not isinstance(_d, dict):
+                continue
+            _fig_bar.add_trace(go.Bar(
+                name=_MODEL_DISPLAY[_mk],
+                x=_METRIC_LABELS,
+                y=[_d.get(k, 0) for k in _METRIC_KEYS],
+                marker_color=_colors[_ci % len(_colors)],
+            ))
+        _fig_bar.update_layout(barmode="group", height=360, margin=dict(t=10))
+        st.plotly_chart(_fig_bar, use_container_width=True)
+
+        # ── Confusion matrices (only if present for this feature set) ──────────
+        _cms = [
+            (_mk, _fs_data.get(_mk, {}).get("confusion_matrix"))
+            for _mk in _ALL_MODELS
+            if _fs_data.get(_mk, {}).get("confusion_matrix") is not None
+        ]
+        if _cms:
+            st.subheader("Confusion Matrices")
+            _cm_cols = st.columns(min(len(_cms), 3))
+            for _ci, (_mk, _cm) in enumerate(_cms):
+                with _cm_cols[_ci % 3]:
+                    st.caption(_MODEL_DISPLAY[_mk])
+                    _fig_cm = px.imshow(
+                        _cm, text_auto=True,
+                        labels=dict(x="Predicted", y="Actual"),
+                        x=["Not Fraud", "Fraud"], y=["Not Fraud", "Fraud"],
+                        color_continuous_scale="Blues",
+                    )
+                    _fig_cm.update_layout(height=230, margin=dict(t=10, b=10))
+                    st.plotly_chart(_fig_cm, use_container_width=True)
+
+    # ── Feature Importance (always from with_leakage RF+XGB average) ──────────
+    st.markdown("---")
+    st.subheader("Feature Importance (RF + XGB average · Full feature set)")
     fi = metrics.get("feature_importances", {})
     if fi:
         fi_sorted = sorted(fi.items(), key=lambda x: x[1], reverse=True)
@@ -332,6 +402,97 @@ elif page == "📊 Model Metrics":
             coloraxis_showscale=False, height=400, margin=dict(t=10),
         )
         st.plotly_chart(fig, use_container_width=True)
+
+    # ── 5-fold cross-validation section ───────────────────────────────────────
+    st.markdown("---")
+    st.subheader("📐 5-Fold Cross-Validation Results")
+    st.caption("StratifiedKFold · SMOTE inside each fold · mean ± std across 5 folds · no_leakage, strict, and pre_transaction feature sets.")
+
+    _KF_OPTIONS = {}
+    if metrics.get("kfold_no_leakage"):
+        _KF_OPTIONS["Error-removed (no_leakage)"] = "kfold_no_leakage"
+    if metrics.get("kfold_strict"):
+        _KF_OPTIONS["Strict (step, type, amount)"] = "kfold_strict"
+    if metrics.get("kfold_pre_transaction"):
+        _KF_OPTIONS["Pre-transaction"] = "kfold_pre_transaction"
+
+    if not _KF_OPTIONS:
+        st.warning("No cross-validation results found in metrics.json. Run `python backend/run_kfold.py` to generate them.")
+    else:
+        _kf_label = st.selectbox(
+            "Select CV feature set",
+            list(_KF_OPTIONS.keys()),
+            label_visibility="collapsed",
+        )
+        _kf_key  = _KF_OPTIONS[_kf_label]
+        _kf_data = metrics.get(_kf_key, {})
+
+        _KF_MODELS = [
+            "logistic_regression", "svc", "decision_tree",
+            "random_forest", "xgboost",
+        ]
+        _kf_rows = []
+        for _mk in _KF_MODELS:
+            _d = _kf_data.get(_mk)
+            if _d is None:
+                continue
+            _kf_rows.append({
+                "Model":           _MODEL_DISPLAY[_mk],
+                "ROC-AUC mean":    _d.get("roc_auc_mean",    "n/a"),
+                "ROC-AUC std":     _d.get("roc_auc_std",     "n/a"),
+                "F1 mean":         _d.get("f1_mean",         "n/a"),
+                "F1 std":          _d.get("f1_std",          "n/a"),
+                "Precision mean":  _d.get("precision_mean",  "n/a"),
+                "Precision std":   _d.get("precision_std",   "n/a"),
+                "Recall mean":     _d.get("recall_mean",     "n/a"),
+                "Recall std":      _d.get("recall_std",      "n/a"),
+            })
+
+        if _kf_rows:
+            _df_kf = pd.DataFrame(_kf_rows).set_index("Model")
+            st.dataframe(_df_kf, use_container_width=True)
+
+            # Combined mean±std display table
+            _kf_display_rows = []
+            for _mk in _KF_MODELS:
+                _d = _kf_data.get(_mk)
+                if _d is None:
+                    continue
+                def _ms(mean_k, std_k):
+                    mv = _d.get(mean_k)
+                    sv = _d.get(std_k)
+                    if mv is None:
+                        return "n/a"
+                    return f"{mv:.4f} ± {sv:.4f}" if sv is not None else f"{mv:.4f}"
+                _kf_display_rows.append({
+                    "Model":     _MODEL_DISPLAY[_mk],
+                    "ROC-AUC":   _ms("roc_auc_mean",   "roc_auc_std"),
+                    "F1":        _ms("f1_mean",         "f1_std"),
+                    "Precision": _ms("precision_mean",  "precision_std"),
+                    "Recall":    _ms("recall_mean",     "recall_std"),
+                })
+            st.caption("mean ± std")
+            st.dataframe(
+                pd.DataFrame(_kf_display_rows).set_index("Model"),
+                use_container_width=True,
+            )
+
+            # CV bar chart: mean values only
+            _fig_kf = go.Figure()
+            _kf_metric_keys   = ["roc_auc_mean", "f1_mean", "precision_mean", "recall_mean"]
+            _kf_metric_labels = ["ROC-AUC", "F1", "Precision", "Recall"]
+            for _ci, _mk in enumerate(_KF_MODELS):
+                _d = _kf_data.get(_mk)
+                if _d is None:
+                    continue
+                _fig_kf.add_trace(go.Bar(
+                    name=_MODEL_DISPLAY[_mk],
+                    x=_kf_metric_labels,
+                    y=[_d.get(k, 0) for k in _kf_metric_keys],
+                    marker_color=_colors[_ci % len(_colors)],
+                ))
+            _fig_kf.update_layout(barmode="group", height=340, margin=dict(t=10))
+            st.plotly_chart(_fig_kf, use_container_width=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
